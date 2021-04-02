@@ -67,6 +67,11 @@ class AppUi extends StatelessWidget {
                 // Here we take the value from the MyHomePage object that was created by
                 // the App.build method, and use it to set our appbar title.
                 title: Text(controller.context.current.description),
+                leading: controller.isAtRoot()
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => controller.popContext()),
                 actions: [
                   IconButton(
                     icon: const Icon(Icons.more),
@@ -111,25 +116,24 @@ class PrayerItemListWidget extends StatelessWidget {
           }
           return aTime.compareTo(bTime);
         });
-        final List<Widget> widgets =
-            listCopy.map<Widget>((e) => PrayerItemWidget(e)).toList();
-        if (widgets.length == 0) {
-          widgets.add(Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text("(no items in list)", style: TextStyle(fontSize: 40)),
-          ));
-        }
-        if (!controller.isAtRoot()) {
-          widgets.insert(
-              0,
-              GestureDetector(
-                onTap: () => controller.popContext(),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text("Go Back", style: TextStyle(fontSize: 40)),
-                ),
-              ));
-        }
+        final List prayerItemWidgets =
+            listCopy.map((e) => PrayerItemWidget(e)).toList();
+        final List<Widget> widgets = [
+          if (!controller.isAtRoot())
+            GestureDetector(
+              onTap: () => controller.popContext(),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text("Go Back", style: TextStyle(fontSize: 40)),
+              ),
+            ),
+          if (prayerItemWidgets.length == 0)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text("(no items in list)", style: TextStyle(fontSize: 40)),
+            ),
+          ...prayerItemWidgets,
+        ];
         return ListView(
           children: widgets,
         );
