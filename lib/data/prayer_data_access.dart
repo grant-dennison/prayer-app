@@ -62,6 +62,12 @@ class PrayerDataAccess {
   void markPrayed(PrayerItem prayerItem, DateTime when) {
     _store.prayerCheckins
         .add(PrayerCheckin(prayerItemId: prayerItem.id, time: when));
+    _store.prayerItems.remove(prayerItem);
+    _store.prayerItems.add(PrayerItem(
+      id: prayerItem.id,
+      description: prayerItem.description,
+      lastPrayed: when,
+    ));
   }
 
   void addUpdate(PrayerItem prayerItem, DateTime when, String text) {
