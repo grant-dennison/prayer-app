@@ -65,10 +65,16 @@ class _PrayerAppState extends State<PrayerApp> {
               ),
             );
           } else {
-            return SizedBox(
-              child: CircularProgressIndicator(),
-              width: 60,
-              height: 60,
+            return MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: SizedBox(
+                    child: CircularProgressIndicator(),
+                    width: 60,
+                    height: 60,
+                  ),
+                ),
+              ),
             );
           }
         });

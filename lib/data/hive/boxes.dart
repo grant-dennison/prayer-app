@@ -14,11 +14,11 @@ Future<Boxes> openBoxes() async {
   final prayerCheckin =
       await Hive.openLazyBox<HivePrayerCheckin>(boxIdPrayerCheckin);
   final prayerChildIds =
-      await Hive.openLazyBox<List<String>>(boxIdPrayerChildIds);
+      await Hive.openLazyBox<List<dynamic>>(boxIdPrayerChildIds);
   final prayerUpdate =
       await Hive.openLazyBox<HivePrayerUpdate>(boxIdPrayerUpdate);
   final prayerUpdateIds =
-      await Hive.openLazyBox<List<String>>(boxIdPrayerUpdateIds);
+      await Hive.openLazyBox<List<dynamic>>(boxIdPrayerUpdateIds);
   print('all boxes opened');
   return Boxes(
     prayer: prayer,
@@ -34,9 +34,11 @@ class Boxes {
   final LazyBox<HivePrayer> prayer;
   final LazyBox<HivePrayerCachedInfo> prayerCachedInfo;
   final LazyBox<HivePrayerCheckin> prayerCheckin;
-  final LazyBox<List<String>> prayerChildIds;
+  // FTODO: Can we make this not dynamic?
+  final LazyBox<List<dynamic>> prayerChildIds;
   final LazyBox<HivePrayerUpdate> prayerUpdate;
-  final LazyBox<List<String>> prayerUpdateIds;
+  // FTODO: Can we make this not dynamic?
+  final LazyBox<List<dynamic>> prayerUpdateIds;
 
   Boxes({
     required this.prayer,
