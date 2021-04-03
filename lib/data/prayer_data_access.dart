@@ -12,7 +12,11 @@ class PrayerDataAccess {
   final InMemoryDataStore _store = generateFakeData();
 
   PrayerItem getRoot() {
-    return _store.rootPrayerItem;
+    return rootPrayerItem;
+  }
+
+  PrayerItem getPrayerItem(String id) {
+    return _store.prayerItems.firstWhere((e) => e.id == id);
   }
 
   List<PrayerItem> getChildren(PrayerItem prayerItem) {

@@ -4,7 +4,7 @@ import 'model/prayer_item.dart';
 import 'model/prayer_update.dart';
 
 class PrayerContext {
-  final List<PrayerItem> breadcrumbs;
+  final List<String> breadcrumbs;
   final PrayerItem current;
   final List<PrayerItem> children;
   final List<PrayerUpdate> updates;

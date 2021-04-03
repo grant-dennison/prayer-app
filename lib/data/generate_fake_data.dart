@@ -28,7 +28,7 @@ InMemoryDataStore generateFakeData() {
   for (final child in topChildren) {
     store.prayerItems.add(child);
     store.prayerPrayerLinks
-        .add(ItemLink(parentId: store.rootPrayerItem.id, childId: child.id));
+        .add(ItemLink(parentId: rootPrayerItem.id, childId: child.id));
   }
 
   return store;
