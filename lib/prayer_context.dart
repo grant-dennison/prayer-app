@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'model/prayer_item.dart';
 import 'model/prayer_update.dart';
 

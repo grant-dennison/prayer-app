@@ -3,9 +3,24 @@ import 'package:prayer_app/build_prayer_context.dart';
 import 'package:prayer_app/navigation/navigation_controller.dart';
 import 'package:prayer_app/prayer_context.dart';
 import 'package:prayer_app/data/prayer_data_access.dart';
+import 'package:prayer_app/utils/uuid.dart';
 import 'package:uuid/uuid.dart';
 
 import 'model/prayer_item.dart';
+
+Future<PrayerContextController> buildPrayerContextController({
+  required PrayerDataAccess dataAccess,
+  required NavigationController navigation,
+  required List<String> breadcrumbs,
+}) async {
+  final context = await buildPrayerContext(breadcrumbs, dataAccess);
+  return PrayerContextController(
+    dataAccess: dataAccess,
+    navigation: navigation,
+    breadcrumbs: breadcrumbs,
+    context: context,
+  );
+}
 
 class PrayerContextController extends ChangeNotifier {
   final PrayerDataAccess _dataAccess;
@@ -17,29 +32,29 @@ class PrayerContextController extends ChangeNotifier {
     required PrayerDataAccess dataAccess,
     required this.navigation,
     required List<String> breadcrumbs,
+    required this.context,
   })   : _dataAccess = dataAccess,
-        _breadcrumbs = breadcrumbs,
-        context = buildPrayerContext(breadcrumbs, dataAccess);
+        _breadcrumbs = breadcrumbs;
 
-  void addPrayer(String description) {
-    final prayerItem = PrayerItem(id: Uuid().v4(), description: description);
-    _dataAccess.createPrayerItem(prayerItem);
-    _dataAccess.linkChild(parent: context.current, child: prayerItem);
+  void addPrayer(String description) async {
+    final prayerItem = PrayerItem(id: genUuid(), description: description);
+    await _dataAccess.createPrayerItem(prayerItem);
+    await _dataAccess.linkChild(parent: context.current, child: prayerItem);
     _rebuildContext();
   }
 
-  void addUpdate(String text) {
+  void addUpdate(String text) async {
     if (text.isEmpty) {
       return;
     }
     print('addStatus()');
-    _dataAccess.addUpdate(context.current, DateTime.now(), text);
+    await _dataAccess.addUpdate(context.current, DateTime.now(), text);
     _rebuildContext();
   }
 
-  void markPrayed(PrayerItem prayerItem) {
+  void markPrayed(PrayerItem prayerItem) async {
     print('markPrayed()');
-    _dataAccess.markPrayed(prayerItem, DateTime.now());
+    await _dataAccess.markPrayed(prayerItem, DateTime.now());
     _rebuildContext();
   }
 
@@ -47,8 +62,8 @@ class PrayerContextController extends ChangeNotifier {
     return _breadcrumbs.length == 1;
   }
 
-  void _rebuildContext() {
-    context = buildPrayerContext(_breadcrumbs, _dataAccess);
+  Future<void> _rebuildContext() async {
+    context = await buildPrayerContext(_breadcrumbs, _dataAccess);
     notifyListeners();
   }
 }

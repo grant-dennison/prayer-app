@@ -1,41 +1,78 @@
-import 'package:prayer_app/data/generate_fake_data.dart';
-import 'package:prayer_app/data/in_memory_data_store.dart';
-import 'package:uuid/uuid.dart';
+import 'package:prayer_app/data/hive/boxes.dart';
+import 'package:prayer_app/data/hive/hive_prayer.dart';
+import 'package:prayer_app/data/hive/hive_prayer_cached_info.dart';
+import 'package:prayer_app/data/hive/hive_prayer_checkin.dart';
+import 'package:prayer_app/data/hive/hive_prayer_update.dart';
+import 'package:prayer_app/data/root_prayer_item.dart';
+import 'package:prayer_app/utils/uuid.dart';
 
-import '../model/prayer_checkin.dart';
 import '../model/prayer_item.dart';
 import '../model/prayer_item_stats.dart';
 import '../model/prayer_update.dart';
-import 'item_link.dart';
 
 class PrayerDataAccess {
-  final InMemoryDataStore _store = generateFakeData();
+  final Boxes _hiveBoxes;
 
-  PrayerItem getRoot() {
+  PrayerDataAccess(Boxes boxes) : _hiveBoxes = boxes;
+
+  Future<PrayerItem> getRoot() async {
     return rootPrayerItem;
   }
 
-  PrayerItem getPrayerItem(String id) {
-    return _store.prayerItems.firstWhere((e) => e.id == id);
+  Future<PrayerItem?> getPrayerItem(String id) async {
+    final hivePrayer = await _hiveBoxes.prayer.get(id);
+    if (hivePrayer == null) {
+      return null;
+    }
+    final cachedInfo = await _hiveBoxes.prayerCachedInfo.get(id);
+    return PrayerItem(
+      id: id,
+      description: hivePrayer.description,
+      lastPrayed: cachedInfo?.lastPrayed,
+    );
   }
 
-  List<PrayerItem> getChildren(PrayerItem prayerItem) {
-    return _store.prayerPrayerLinks
-        .where((link) => link.parentId == prayerItem.id)
-        .map((link) =>
-            _store.prayerItems.firstWhere((item) => link.childId == item.id))
-        .toList();
+  bool prayerItemExists(String id) {
+    return _hiveBoxes.prayer.containsKey(id);
   }
 
-  List<PrayerUpdate> getUpdates(PrayerItem prayerItem) {
-    return _store.prayerUpdateLinks
-        .where((link) => link.parentId == prayerItem.id)
-        .map((link) =>
-            _store.prayerUpdates.firstWhere((item) => link.childId == item.id))
-        .toList();
+  Future<PrayerUpdate?> getPrayerUpdate(String id) async {
+    final hivePrayerUpdate = await _hiveBoxes.prayerUpdate.get(id);
+    if (hivePrayerUpdate == null) {
+      return null;
+    }
+    return PrayerUpdate(
+      id: id,
+      time: hivePrayerUpdate.created,
+      text: hivePrayerUpdate.description,
+    );
   }
 
-  PrayerItemStats getStats(PrayerItem prayerItem) {
+  Future<List<PrayerItem>> getChildren(PrayerItem prayerItem) async {
+    final childIds = await _hiveBoxes.prayerChildIds.get(prayerItem.id);
+    if (childIds == null) {
+      return [];
+    }
+    return await Future.wait(
+        childIds.where((e) => prayerItemExists(e)).map((e) async {
+      final item = await getPrayerItem(e);
+      return item!;
+    }));
+  }
+
+  Future<List<PrayerUpdate>> getUpdates(PrayerItem prayerItem) async {
+    final updateIds = await _hiveBoxes.prayerUpdateIds.get(prayerItem.id);
+    if (updateIds == null) {
+      return [];
+    }
+    return await Future.wait(updateIds.map((e) async {
+      final item = await getPrayerUpdate(e);
+      return item ??
+          PrayerUpdate(id: e, time: DateTime.now(), text: '[NOT FOUND]');
+    }));
+  }
+
+  Future<PrayerItemStats> getStats(PrayerItem prayerItem) async {
     return PrayerItemStats(
       numberPrayed: 3,
       firstPrayedTime: DateTime.utc(1989, 11, 9),
@@ -43,41 +80,73 @@ class PrayerDataAccess {
     );
   }
 
-  void createPrayerItem(PrayerItem prayerItem) {
-    _store.prayerItems.add(prayerItem);
+  Future<void> createPrayerItem(PrayerItem prayerItem) async {
+    await Future.wait([
+      _hiveBoxes.prayer
+          .put(prayerItem.id, HivePrayer(description: prayerItem.description)),
+      _hiveBoxes.prayerChildIds.put(prayerItem.id, []),
+      _hiveBoxes.prayerUpdateIds.put(prayerItem.id, []),
+      _hiveBoxes.prayerCachedInfo.put(prayerItem.id, HivePrayerCachedInfo()),
+    ]);
   }
 
-  void linkChild({
+  Future<void> linkChild({
     required PrayerItem parent,
     required PrayerItem child,
-  }) {
-    _store.prayerPrayerLinks
-        .add(ItemLink(parentId: parent.id, childId: child.id));
+  }) async {
+    final existingChildIds = await _hiveBoxes.prayerChildIds.get(parent.id);
+    final newChildIds = List<String>.from(existingChildIds ?? []);
+    newChildIds.add(child.id);
+    await _hiveBoxes.prayerChildIds.put(parent.id, newChildIds);
   }
 
-  void unlinkChild({
+  Future<void> unlinkChild({
     required PrayerItem parent,
     required PrayerItem child,
-  }) {
-    _store.prayerPrayerLinks.removeWhere(
-        (link) => link.parentId == parent.id && link.childId == child.id);
+  }) async {
+    final existingChildIds = await _hiveBoxes.prayerChildIds.get(parent.id);
+    final newChildIds = List<String>.from(existingChildIds ?? []);
+    newChildIds.remove(child.id);
+    await _hiveBoxes.prayerChildIds.put(parent.id, newChildIds);
   }
 
-  void markPrayed(PrayerItem prayerItem, DateTime when) {
-    _store.prayerCheckins
-        .add(PrayerCheckin(prayerItemId: prayerItem.id, time: when));
-    _store.prayerItems.remove(prayerItem);
-    _store.prayerItems.add(PrayerItem(
-      id: prayerItem.id,
-      description: prayerItem.description,
-      lastPrayed: when,
-    ));
+  Future<void> markPrayed(PrayerItem prayerItem, DateTime when) async {
+    await Future.wait([
+      () async {
+        var hivePrayerCachedInfo =
+            await _hiveBoxes.prayerCachedInfo.get(prayerItem.id);
+        if (hivePrayerCachedInfo == null) {
+          hivePrayerCachedInfo = HivePrayerCachedInfo();
+        }
+        if (hivePrayerCachedInfo.firstPrayed == null) {
+          hivePrayerCachedInfo.firstPrayed = when;
+        }
+        hivePrayerCachedInfo.timesPrayed++;
+        hivePrayerCachedInfo.lastPrayed = when;
+        await _hiveBoxes.prayerCachedInfo
+            .put(prayerItem.id, hivePrayerCachedInfo);
+      }(),
+      _hiveBoxes.prayerCheckin.put(
+        genUuid(),
+        HivePrayerCheckin(prayerId: prayerItem.id),
+      ),
+    ]);
   }
 
-  void addUpdate(PrayerItem prayerItem, DateTime when, String text) {
-    final status = PrayerUpdate(id: Uuid().v4(), time: when, text: text);
-    _store.prayerUpdates.add(status);
-    _store.prayerUpdateLinks
-        .add(ItemLink(parentId: prayerItem.id, childId: status.id));
+  Future<void> addUpdate(
+      PrayerItem prayerItem, DateTime when, String text) async {
+    final id = genUuid();
+    final status = HivePrayerUpdate(
+        prayerId: prayerItem.id, time: when, description: text);
+    await Future.wait([
+      _hiveBoxes.prayerUpdate.put(id, status),
+      () async {
+        final existingUpdateIds =
+            await _hiveBoxes.prayerUpdateIds.get(prayerItem.id);
+        final newUpdateIds = List<String>.from(existingUpdateIds ?? []);
+        newUpdateIds.add(id);
+        _hiveBoxes.prayerUpdateIds.put(prayerItem.id, newUpdateIds);
+      }()
+    ]);
   }
 }

@@ -84,14 +84,6 @@ class PrayerItemListWidget extends StatelessWidget {
         final List prayerItemWidgets =
             listCopy.map((e) => PrayerItemWidget(e)).toList();
         final List<Widget> widgets = [
-          // if (!controller.isAtRoot())
-          //   GestureDetector(
-          //     onTap: () => controller.navigation.popContext(),
-          //     child: Padding(
-          //       padding: const EdgeInsets.all(8.0),
-          //       child: Text("Go Back", style: TextStyle(fontSize: 40)),
-          //     ),
-          //   ),
           if (prayerItemWidgets.length == 0)
             Padding(
               padding: const EdgeInsets.all(8.0),

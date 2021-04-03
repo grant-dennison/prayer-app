@@ -1,13 +1,16 @@
 import 'package:prayer_app/data/prayer_data_access.dart';
 import 'package:prayer_app/prayer_context.dart';
 
-PrayerContext buildPrayerContext(
+Future<PrayerContext> buildPrayerContext(
   List<String> breadcrumbs,
   PrayerDataAccess dataAccess,
-) {
-  final prayerItem = dataAccess.getPrayerItem(breadcrumbs.last);
-  final children = dataAccess.getChildren(prayerItem);
-  final updates = dataAccess.getUpdates(prayerItem);
+) async {
+  final prayerItem = await dataAccess.getPrayerItem(breadcrumbs.last);
+  if (prayerItem == null) {
+    throw ('Prayer item not found');
+  }
+  final children = await dataAccess.getChildren(prayerItem);
+  final updates = await dataAccess.getUpdates(prayerItem);
   return PrayerContext(
     breadcrumbs: breadcrumbs,
     current: prayerItem,

@@ -7,12 +7,54 @@ import 'hive_prayer_child_ids.dart';
 import 'hive_prayer_update.dart';
 import 'hive_prayer_update_ids.dart';
 
-class Boxes {
-  final prayer = Hive.lazyBox<HivePrayer>(boxIdPrayer);
+Future<Boxes> openBoxes() async {
+  final prayer = await Hive.openLazyBox<HivePrayer>(boxIdPrayer);
   final prayerCachedInfo =
-      Hive.lazyBox<HivePrayerCachedInfo>(boxIdPrayerCachedInfo);
-  final prayerCheckin = Hive.lazyBox<HivePrayerCheckin>(boxIdPrayerCheckin);
-  final prayerChildIds = Hive.lazyBox<List<String>>(boxIdPrayerChildIds);
-  final prayerUpdate = Hive.lazyBox<HivePrayerUpdate>(boxIdPrayerUpdate);
-  final prayerUpdateIds = Hive.lazyBox<List<String>>(boxIdPrayerUpdateIds);
+      await Hive.openLazyBox<HivePrayerCachedInfo>(boxIdPrayerCachedInfo);
+  final prayerCheckin =
+      await Hive.openLazyBox<HivePrayerCheckin>(boxIdPrayerCheckin);
+  final prayerChildIds =
+      await Hive.openLazyBox<List<String>>(boxIdPrayerChildIds);
+  final prayerUpdate =
+      await Hive.openLazyBox<HivePrayerUpdate>(boxIdPrayerUpdate);
+  final prayerUpdateIds =
+      await Hive.openLazyBox<List<String>>(boxIdPrayerUpdateIds);
+  print('all boxes opened');
+  return Boxes(
+    prayer: prayer,
+    prayerCachedInfo: prayerCachedInfo,
+    prayerCheckin: prayerCheckin,
+    prayerChildIds: prayerChildIds,
+    prayerUpdate: prayerUpdate,
+    prayerUpdateIds: prayerUpdateIds,
+  );
+}
+
+class Boxes {
+  final LazyBox<HivePrayer> prayer;
+  final LazyBox<HivePrayerCachedInfo> prayerCachedInfo;
+  final LazyBox<HivePrayerCheckin> prayerCheckin;
+  final LazyBox<List<String>> prayerChildIds;
+  final LazyBox<HivePrayerUpdate> prayerUpdate;
+  final LazyBox<List<String>> prayerUpdateIds;
+
+  Boxes({
+    required this.prayer,
+    required this.prayerCachedInfo,
+    required this.prayerCheckin,
+    required this.prayerChildIds,
+    required this.prayerUpdate,
+    required this.prayerUpdateIds,
+  });
+
+  Future<void> dispose() async {
+    await Future.wait([
+      prayer.close(),
+      prayerCachedInfo.close(),
+      prayerCheckin.close(),
+      prayerChildIds.close(),
+      prayerUpdate.close(),
+      prayerUpdateIds.close(),
+    ]);
+  }
 }
