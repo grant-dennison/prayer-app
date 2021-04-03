@@ -20,10 +20,12 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final dataAccess = Provider.of<PrayerDataAccess>(context);
     final navigationController = Provider.of<NavigationController>(context);
-    return Center(
-        child: ElevatedButton(
-      onPressed: () => navigationController.pushContext(dataAccess.getRoot()),
-      child: Text('Pray'),
-    ));
+    return Scaffold(
+      body: Center(
+          child: ElevatedButton(
+        onPressed: () => navigationController.pushContext(dataAccess.getRoot()),
+        child: Text('Pray'),
+      )),
+    );
   }
 }

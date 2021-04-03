@@ -9,16 +9,15 @@ import 'model/prayer_item.dart';
 
 class PrayerContextController extends ChangeNotifier {
   final PrayerDataAccess _dataAccess;
-  final NavigationController _navigationController;
+  final NavigationController navigation;
   final List<String> _breadcrumbs;
   PrayerContext context;
 
   PrayerContextController({
     required PrayerDataAccess dataAccess,
-    required NavigationController navigationController,
+    required this.navigation,
     required List<String> breadcrumbs,
   })   : _dataAccess = dataAccess,
-        _navigationController = navigationController,
         _breadcrumbs = breadcrumbs,
         context = buildPrayerContext(breadcrumbs, dataAccess);
 
@@ -29,9 +28,12 @@ class PrayerContextController extends ChangeNotifier {
     _rebuildContext();
   }
 
-  void addUpdate(PrayerItem prayerItem, String text) {
+  void addUpdate(String text) {
+    if (text.isEmpty) {
+      return;
+    }
     print('addStatus()');
-    _dataAccess.addUpdate(prayerItem, DateTime.now(), text);
+    _dataAccess.addUpdate(context.current, DateTime.now(), text);
     _rebuildContext();
   }
 
@@ -43,14 +45,6 @@ class PrayerContextController extends ChangeNotifier {
 
   bool isAtRoot() {
     return _breadcrumbs.length == 1;
-  }
-
-  void popContext() {
-    _navigationController.popContext();
-  }
-
-  void pushContext(PrayerItem targetPrayerItem) {
-    _navigationController.pushContext(targetPrayerItem);
   }
 
   void _rebuildContext() {

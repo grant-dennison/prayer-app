@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_swipe_action_cell/core/cell.dart';
-import 'package:prayer_app/data/prayer_data_access.dart';
-import 'package:prayer_app/navigation/navigation_controller.dart';
+import 'package:prayer_app/page/prayer_context_controller_provider.dart';
 import 'package:prompt_dialog/prompt_dialog.dart';
 import 'package:provider/provider.dart';
 
@@ -20,8 +18,9 @@ class PrayerItemListPage extends Page {
     return MaterialPageRoute(
       settings: this,
       builder: (BuildContext context) {
-        return PrayerItemListScreen(
+        return PrayerContextControllerProvider(
           breadcrumbs: breadcrumbs,
+          child: PrayerItemListScreen(),
         );
       },
     );
@@ -29,65 +28,38 @@ class PrayerItemListPage extends Page {
 }
 
 class PrayerItemListScreen extends StatelessWidget {
-  final List<String> breadcrumbs;
-
-  PrayerItemListScreen({
-    required this.breadcrumbs,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final dataAccess = Provider.of<PrayerDataAccess>(context);
-    return Consumer<NavigationController>(
-        builder: (context, navigationController, child) =>
-            ChangeNotifierProvider<PrayerContextController>(
-              create: (context) => PrayerContextController(
-                dataAccess: dataAccess,
-                navigationController: navigationController,
-                breadcrumbs: breadcrumbs,
-              ),
-              child: child,
-            ),
-        child: AppUi());
-  }
-}
-
-class AppUi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<PrayerContextController>(
-        builder: (context, controller, child) => Scaffold(
-              appBar: AppBar(
-                // Here we take the value from the MyHomePage object that was created by
-                // the App.build method, and use it to set our appbar title.
-                title: Text(controller.context.current.description),
-                leading: controller.isAtRoot()
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () => controller.popContext()),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.more),
-                    tooltip: 'See prayer details',
-                    onPressed: () {
-                      print('see more');
-                    },
-                  )
-                ],
-              ),
-              body: PrayerItemListWidget(),
-              floatingActionButton: FloatingActionButton(
-                onPressed: () async {
-                  final input = await prompt(context);
-                  if (input != null && input.isNotEmpty) {
-                    controller.addPrayer(input);
-                  }
+      builder: (context, controller, child) => Scaffold(
+        appBar: AppBar(
+          title: Text(controller.context.current.description),
+          actions: [
+            if (!controller.isAtRoot())
+              IconButton(
+                icon: const Icon(Icons.more),
+                tooltip: 'See prayer details',
+                onPressed: () {
+                  print('see more');
+                  controller.navigation.toggleDetails(true);
                 },
-                tooltip: 'Increment',
-                child: Icon(Icons.add),
-              ), // This trailing comma makes auto-formatting nicer for build methods.
-            ));
+              )
+          ],
+        ),
+        body: child,
+        floatingActionButton: FloatingActionButton(
+          onPressed: () async {
+            final input = await prompt(context);
+            if (input != null && input.isNotEmpty) {
+              controller.addPrayer(input);
+            }
+          },
+          tooltip: 'Add Prayer',
+          child: Icon(Icons.add),
+        ),
+      ),
+      child: PrayerItemListWidget(),
+    );
   }
 }
 
@@ -96,7 +68,6 @@ class PrayerItemListWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<PrayerContextController>(
       builder: (context, controller, child) {
-        print('rebuild list');
         final List<PrayerItem> listCopy =
             List.from(controller.context.children);
         listCopy.sort((a, b) {
@@ -113,18 +84,22 @@ class PrayerItemListWidget extends StatelessWidget {
         final List prayerItemWidgets =
             listCopy.map((e) => PrayerItemWidget(e)).toList();
         final List<Widget> widgets = [
-          if (!controller.isAtRoot())
-            GestureDetector(
-              onTap: () => controller.popContext(),
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Text("Go Back", style: TextStyle(fontSize: 40)),
-              ),
-            ),
+          // if (!controller.isAtRoot())
+          //   GestureDetector(
+          //     onTap: () => controller.navigation.popContext(),
+          //     child: Padding(
+          //       padding: const EdgeInsets.all(8.0),
+          //       child: Text("Go Back", style: TextStyle(fontSize: 40)),
+          //     ),
+          //   ),
           if (prayerItemWidgets.length == 0)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Text("(no items in list)", style: TextStyle(fontSize: 40)),
+              child: Text("(no items in list)",
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontStyle: FontStyle.italic,
+                  )),
             ),
           ...prayerItemWidgets,
         ];
@@ -145,32 +120,21 @@ class PrayerItemWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller =
         Provider.of<PrayerContextController>(context, listen: false);
-    return SwipeActionCell(
+    return Dismissible(
       key: ValueKey(prayerItem.id + '|' + prayerItem.lastPrayed.toString()),
-      performsFirstActionWithFullSwipe: true,
-      fullSwipeFactor: 0.3,
-      trailingActions: [
-        SwipeAction(
-          title: 'Mark Prayed',
-          icon: const Icon(
-            Icons.check_circle_outline_rounded,
-            color: Colors.white,
-          ),
-          onTap: (handler) async {
-            await handler(true);
-            controller.markPrayed(prayerItem);
-          },
-          color: Colors.green,
-        ),
-      ],
       child: GestureDetector(
-        onTap: () => controller.pushContext(prayerItem),
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child:
-              Text("${prayerItem.description}", style: TextStyle(fontSize: 40)),
+        onTap: () => controller.navigation.pushContext(prayerItem),
+        child: ListTile(
+          title: Text(
+            "${prayerItem.description}",
+            style: TextStyle(fontSize: 40),
+          ),
         ),
       ),
+      background: Container(
+        color: Colors.green,
+      ),
+      onDismissed: (direction) => controller.markPrayed(prayerItem),
     );
   }
 }

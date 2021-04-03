@@ -24,11 +24,11 @@ dependencies:
   flutter:
     sdk: flutter
 
+  date_time_format: ^2.0.1
+  keyboard_dismisser: ^2.0.0
+  prompt_dialog: ^1.0.0
   provider: ^5.0.0
   uuid: ^3.0.3
-  flutter_swipe_action_cell: ^2.0.2
-
-  prompt_dialog: ^1.0.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
