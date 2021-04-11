@@ -80,11 +80,12 @@ void main() {
       expect(f.idListHelper.length, equals(2 * n));
       expect(f.listBox.backing[listId]!.length, equals(2 * n));
       final counts = List.filled(n, 0);
-      await f.idListHelper.forEachId(0, n, (i, id) async {
+      await f.idListHelper.forEachId(0, 2 * n, (i, id) async {
         counts[int.parse(id)]++;
       });
-      for (final count in counts) {
-        expect(count, equals(2));
+      for (var i = 0; i < n; i++) {
+        final count = counts[i];
+        expect(count, equals(2), reason: 'Expect to see 2 of $i');
       }
     });
 
