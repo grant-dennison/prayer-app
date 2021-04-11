@@ -1,19 +1,24 @@
 import 'package:prayer_app/data/hive/boxes.dart';
 import 'package:prayer_app/data/hive/hive_prayer.dart';
-import 'package:prayer_app/data/hive/hive_prayer_cached_info.dart';
-import 'package:prayer_app/data/hive/hive_prayer_checkin.dart';
 import 'package:prayer_app/data/hive/hive_prayer_update.dart';
+import 'package:prayer_app/data/id_list_manager.dart';
 import 'package:prayer_app/data/root_prayer_item.dart';
+import 'package:prayer_app/model/prayer_update_list_helper.dart';
 import 'package:prayer_app/utils/uuid.dart';
 
 import '../model/prayer_item.dart';
-import '../model/prayer_item_stats.dart';
 import '../model/prayer_update.dart';
 
 class PrayerDataAccess {
   final Boxes _hiveBoxes;
+  final IdListManager _listManager;
 
-  PrayerDataAccess(Boxes boxes) : _hiveBoxes = boxes;
+  PrayerDataAccess(Boxes boxes)
+      : _hiveBoxes = boxes,
+        _listManager = IdListManager(
+          listBox: boxes.idList,
+          chunkBox: boxes.idListChunk,
+        );
 
   Future<PrayerItem> getRoot() async {
     return rootPrayerItem;
@@ -24,11 +29,10 @@ class PrayerDataAccess {
     if (hivePrayer == null) {
       return null;
     }
-    final cachedInfo = await _hiveBoxes.prayerCachedInfo.get(id);
     return PrayerItem(
       id: id,
       description: hivePrayer.description,
-      lastPrayed: cachedInfo?.lastPrayed,
+      lastPrayed: hivePrayer.lastPrayed,
     );
   }
 
@@ -48,45 +52,39 @@ class PrayerDataAccess {
     );
   }
 
-  Future<List<PrayerItem>> getChildren(PrayerItem prayerItem) async {
-    final childIds = await _hiveBoxes.prayerChildIds.get(prayerItem.id);
-    if (childIds == null) {
+  Future<List<PrayerItem>> getActiveChildren(PrayerItem prayerItem) async {
+    final hivePrayer = await _hiveBoxes.prayer.get(prayerItem.id);
+    if (hivePrayer == null) {
       return [];
     }
-    return await Future.wait(
-        childIds.where((e) => prayerItemExists(e)).map((e) async {
+    return Future.wait(hivePrayer.activeChildIds
+        .where((e) => prayerItemExists(e))
+        .map((e) async {
       final item = await getPrayerItem(e);
       return item!;
     }));
   }
 
-  Future<List<PrayerUpdate>> getUpdates(PrayerItem prayerItem) async {
-    final updateIds = await _hiveBoxes.prayerUpdateIds.get(prayerItem.id);
-    if (updateIds == null) {
-      return [];
+  Future<PrayerUpdateListHelper> getUpdateHelper(PrayerItem prayerItem) async {
+    final hivePrayer = await _hiveBoxes.prayer.get(prayerItem.id);
+    if (hivePrayer == null) {
+      return PrayerUpdateListHelper(listHelper: null, dataAccess: this);
     }
-    return await Future.wait(updateIds.map((e) async {
-      final item = await getPrayerUpdate(e);
-      return item ??
-          PrayerUpdate(id: e, time: DateTime.now(), text: '[NOT FOUND]');
-    }));
-  }
-
-  Future<PrayerItemStats> getStats(PrayerItem prayerItem) async {
-    return PrayerItemStats(
-      numberPrayed: 3,
-      firstPrayedTime: DateTime.utc(1989, 11, 9),
-      lastPrayedTime: DateTime.now(),
-    );
+    return PrayerUpdateListHelper(
+        listHelper: await _listManager.getList(hivePrayer.updateIdListId),
+        dataAccess: this);
   }
 
   Future<void> createPrayerItem(PrayerItem prayerItem) async {
     await Future.wait([
-      _hiveBoxes.prayer
-          .put(prayerItem.id, HivePrayer(description: prayerItem.description)),
-      _hiveBoxes.prayerChildIds.put(prayerItem.id, []),
-      _hiveBoxes.prayerUpdateIds.put(prayerItem.id, []),
-      _hiveBoxes.prayerCachedInfo.put(prayerItem.id, HivePrayerCachedInfo()),
+      _hiveBoxes.prayer.put(
+        prayerItem.id,
+        HivePrayer(
+          description: prayerItem.description,
+          updateIdListId: await _listManager.createList(),
+          answeredChildIdListId: await _listManager.createList(),
+        ),
+      ),
     ]);
   }
 
@@ -94,43 +92,33 @@ class PrayerDataAccess {
     required PrayerItem parent,
     required PrayerItem child,
   }) async {
-    final existingChildIds = await _hiveBoxes.prayerChildIds.get(parent.id);
-    final newChildIds = List<String>.from(existingChildIds ?? []);
+    final hivePrayerParent = await _hiveBoxes.prayer.get(parent.id);
+    if (hivePrayerParent == null) return;
+    final newChildIds = List<String>.from(hivePrayerParent.activeChildIds);
     newChildIds.add(child.id);
-    await _hiveBoxes.prayerChildIds.put(parent.id, newChildIds);
+    hivePrayerParent.activeChildIds = newChildIds;
+    await _hiveBoxes.prayer.put(parent.id, hivePrayerParent);
   }
 
   Future<void> unlinkChild({
     required PrayerItem parent,
     required PrayerItem child,
   }) async {
-    final existingChildIds = await _hiveBoxes.prayerChildIds.get(parent.id);
-    final newChildIds = List<String>.from(existingChildIds ?? []);
+    final hivePrayerParent = await _hiveBoxes.prayer.get(parent.id);
+    if (hivePrayerParent == null) return;
+    final newChildIds = List<String>.from(hivePrayerParent.activeChildIds);
     newChildIds.remove(child.id);
-    await _hiveBoxes.prayerChildIds.put(parent.id, newChildIds);
+    hivePrayerParent.activeChildIds = newChildIds;
+    await _hiveBoxes.prayer.put(parent.id, hivePrayerParent);
   }
 
   Future<void> markPrayed(PrayerItem prayerItem, DateTime when) async {
-    await Future.wait([
-      () async {
-        var hivePrayerCachedInfo =
-            await _hiveBoxes.prayerCachedInfo.get(prayerItem.id);
-        if (hivePrayerCachedInfo == null) {
-          hivePrayerCachedInfo = HivePrayerCachedInfo();
-        }
-        if (hivePrayerCachedInfo.firstPrayed == null) {
-          hivePrayerCachedInfo.firstPrayed = when;
-        }
-        hivePrayerCachedInfo.timesPrayed++;
-        hivePrayerCachedInfo.lastPrayed = when;
-        await _hiveBoxes.prayerCachedInfo
-            .put(prayerItem.id, hivePrayerCachedInfo);
-      }(),
-      _hiveBoxes.prayerCheckin.put(
-        genUuid(),
-        HivePrayerCheckin(prayerId: prayerItem.id),
-      ),
-    ]);
+    final hivePrayer = await _hiveBoxes.prayer.get(prayerItem.id);
+    if (hivePrayer != null) {
+      hivePrayer.timesPrayed++;
+      hivePrayer.lastPrayed = when;
+      await _hiveBoxes.prayer.put(prayerItem.id, hivePrayer);
+    }
   }
 
   Future<void> addUpdate(
@@ -141,11 +129,11 @@ class PrayerDataAccess {
     await Future.wait([
       _hiveBoxes.prayerUpdate.put(id, status),
       () async {
-        final existingUpdateIds =
-            await _hiveBoxes.prayerUpdateIds.get(prayerItem.id);
-        final newUpdateIds = List<String>.from(existingUpdateIds ?? []);
-        newUpdateIds.add(id);
-        _hiveBoxes.prayerUpdateIds.put(prayerItem.id, newUpdateIds);
+        final hivePrayer = await _hiveBoxes.prayer.get(prayerItem.id);
+        if (hivePrayer == null) return;
+        final listHelper =
+            await _listManager.getList(hivePrayer.updateIdListId);
+        await listHelper.insertId(0, id);
       }()
     ]);
   }

@@ -12,7 +12,7 @@ class PrayerItemDetailsPage extends Page {
 
   PrayerItemDetailsPage({
     required this.breadcrumbs,
-  }) : super(key: ValueKey(breadcrumbs.join('/') + '/details-page'));
+  }) : super(key: ValueKey('${breadcrumbs.join('/')}/details-page'));
 
   @override
   Route createRoute(BuildContext context) {
@@ -38,17 +38,25 @@ class PrayerItemDetailsScreen extends StatelessWidget {
             title: Text(controller.context.current.description),
             leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: () => controller.navigation.toggleDetails(false)),
+                onPressed: () =>
+                    controller.navigation.toggleDetails(show: false)),
           ),
           body: child,
         ),
       ),
-      child: ListView(
-        children: [
-          PrayerItemDetailsSummary(),
-          PrayerItemUpdates(),
-        ],
-      ),
+      child: PrayerItemUpdates(),
+    );
+  }
+}
+
+class PrayerItemDetailsTop extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        PrayerItemDetailsSummary(),
+        PrayerItemUpdateInput(),
+      ],
     );
   }
 }
@@ -57,11 +65,12 @@ class PrayerItemDetailsSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Provider.of<PrayerContextController>(context);
+    final timesPrayed = controller.context.current.timesPrayed;
     return Padding(
       padding: cardPadding,
       child: Text(
-        'Prayed X times since X date/time',
-        style: TextStyle(
+        'Prayed $timesPrayed times since X date/time',
+        style: const TextStyle(
           fontSize: 20.0,
         ),
       ),
@@ -73,14 +82,24 @@ class PrayerItemUpdates extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Provider.of<PrayerContextController>(context);
-    final List<PrayerUpdate> updates = List.from(controller.context.updates);
-    updates.sort((a, b) => b.time.compareTo(a.time));
-    final List<Widget> children = [
-      PrayerItemUpdateInput(),
-      ...updates.map((e) => PrayerItemUpdate(update: e)).toList()
-    ];
-    return Column(
-      children: children,
+    final updateHelper = controller.context.updates;
+    return ListView.builder(
+      itemCount: updateHelper.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return PrayerItemDetailsTop();
+        }
+        return FutureBuilder(
+          future: updateHelper.getUpdate(index - 1),
+          builder: (context, AsyncSnapshot<PrayerUpdate> snapshot) {
+            if (snapshot.hasData) {
+              return PrayerItemUpdate(update: snapshot.data!);
+            } else {
+              return const Text('LOADING...');
+            }
+          },
+        );
+      },
     );
   }
 }
@@ -111,7 +130,7 @@ class _PrayerItemUpdateInputState extends State<PrayerItemUpdateInput> {
           children: [
             TextField(
               controller: textController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 // border: OutlineInputBorder(),
                 hintText: 'Write an update...',
               ),
@@ -127,7 +146,7 @@ class _PrayerItemUpdateInputState extends State<PrayerItemUpdateInput> {
                   controller.addUpdate(textController.text);
                   textController.clear();
                 },
-                child: Text('Save'),
+                child: const Text('Save'),
               ),
             )
           ],
@@ -148,13 +167,13 @@ class PrayerItemUpdate extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: EdgeInsets.only(left: 5.0),
+          padding: const EdgeInsets.only(left: 5.0),
           child: Align(
             alignment: Alignment.bottomLeft,
             child: Text(
               DateTimeFormat.format(update.time,
                   format: 'D, M j, \\a\\t h:i a'),
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontStyle: FontStyle.italic,
               ),

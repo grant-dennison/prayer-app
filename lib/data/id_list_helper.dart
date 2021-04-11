@@ -1,18 +1,34 @@
 import 'package:hive/hive.dart';
+import 'package:mutex/mutex.dart';
 import 'package:prayer_app/data/hive/hive_id_list_chunk.dart';
 import 'package:prayer_app/utils/uuid.dart';
 
-const _idealChunkSize = 100;
+import 'hive/hive_id_list.dart';
+
+// const _idealChunkSize = 100;
+// TODO: Change this to back to something higher like 100. Lower now for testing.
+const _idealChunkSize = 4;
 const _minChunkSize = _idealChunkSize ~/ 2;
 const _maxChunkSize = 2 * _idealChunkSize;
 
-class IdListWriteHelper {
+enum LoopBehavior {
+  keepGoing,
+  stop,
+}
+
+class IdListHelper {
+  final LazyBox<HiveIdList> listBox;
   final LazyBox<HiveIdListChunk> chunkBox;
+  final String listId;
   int _length;
   _Chunk _currentChunk;
 
-  IdListWriteHelper({
+  final moveMutex = Mutex();
+
+  IdListHelper({
+    required this.listBox,
     required this.chunkBox,
+    required this.listId,
     required int length,
     required String chunkId,
     int startIndex = 0,
@@ -21,34 +37,39 @@ class IdListWriteHelper {
         _currentChunk =
             _Chunk(id: chunkId, startIndex: startIndex, data: chunk);
 
+  int get length => _length;
+
   Future<String> getId(int index) async {
     if (index < 0 || index >= _length) {
-      throw ('Index out of bounds');
+      throw 'Index out of bounds';
     }
     if (!_isIndexInCurrentChunk(index)) {
-      _moveToChunkWith(index);
+      await _moveToChunkWith(index);
     }
     return _currentChunk.getId(index);
   }
 
-  Future<void> forEachId(
-      int index, int length, void Function(String) callback) async {
-    for (int i = index; i < index + length; i++) {
+  Future<void> forEachId(int startIndex, int length,
+      Future<LoopBehavior?> Function(int i, String id) callback) async {
+    for (var i = startIndex; i < startIndex + length; i++) {
       if (!_isIndexInCurrentChunk(i)) {
-        _moveToChunkWith(i);
+        await _moveToChunkWith(i);
       }
-      callback(_currentChunk.getId(i));
+      final result = await callback(i, _currentChunk.getId(i));
+      if (result == LoopBehavior.stop) {
+        return;
+      }
     }
   }
 
   Future<void> insertId(int index, String id) async {
     await _modifyListAt(index, (list, i) => list.insert(i, id));
-    _length++;
+    await _setLength(_length + 1);
   }
 
   Future<void> removeId(int index) async {
     await _modifyListAt(index, (list, i) => list.removeAt(i));
-    _length--;
+    await _setLength(_length - 1);
   }
 
   Future<void> _modifyListAt(
@@ -59,10 +80,17 @@ class IdListWriteHelper {
     _currentChunk.data.ids = idsCopy;
     await chunkBox.put(_currentChunk.id, _currentChunk.data);
     if (_currentChunk.data.ids.length > _maxChunkSize) {
-      _splitCurrent();
+      await _splitCurrent();
     } else if (_currentChunk.data.ids.length < _minChunkSize) {
-      _handleCurrentTooSmall();
+      await _handleCurrentTooSmall();
     }
+  }
+
+  Future<void> _setLength(int length) async {
+    final list = await listBox.get(listId);
+    list!.length = length;
+    await listBox.put(listId, list);
+    _length = length;
   }
 
   Future<void> _splitCurrent() async {
@@ -93,9 +121,9 @@ class IdListWriteHelper {
     final leftChunk = leftId == null ? null : await chunkBox.get(leftId);
     final rightChunk = rightId == null ? null : await chunkBox.get(rightId);
     if (leftChunk != null) {
-      _evenOutAdjacentChunks(leftId!, _currentChunk.id, leftChunk, c);
+      await _evenOutAdjacentChunks(leftId!, _currentChunk.id, leftChunk, c);
     } else if (rightChunk != null) {
-      _evenOutAdjacentChunks(_currentChunk.id, rightId!, c, rightChunk);
+      await _evenOutAdjacentChunks(_currentChunk.id, rightId!, c, rightChunk);
     } else {
       // There is only one chunk.
     }
@@ -143,22 +171,38 @@ class IdListWriteHelper {
   }
 
   Future<void> _moveToChunkWith(int index) async {
-    bool moveForward = index > _currentChunk.startIndex;
-    while (!_isIndexInCurrentChunk(index)) {
-      final adjacentChunkId = moveForward
-          ? _currentChunk.data.nextChunkId
-          : _currentChunk.data.previousChunkId;
-      final maybeChunk =
-          adjacentChunkId == null ? null : await chunkBox.get(adjacentChunkId);
-      if (adjacentChunkId == null || maybeChunk == null) {
-        throw ('Adjacent chunk not found');
+    await moveMutex.protect(() async {
+      final moveForward = index > _currentChunk.startIndex;
+      while (!_isIndexInCurrentChunk(index)) {
+        final adjacentChunkId = moveForward
+            ? _currentChunk.data.nextChunkId
+            : _currentChunk.data.previousChunkId;
+        final maybeChunk = adjacentChunkId == null
+            ? null
+            : await chunkBox.get(adjacentChunkId);
+        if (adjacentChunkId == null || maybeChunk == null) {
+          throw 'Adjacent chunk not found';
+        }
+        final newStartIndex = _currentChunk.startIndex +
+            (moveForward
+                ? _currentChunk.data.ids.length
+                : -maybeChunk.ids.length);
+        _currentChunk = _Chunk(
+            id: adjacentChunkId, startIndex: newStartIndex, data: maybeChunk);
       }
-      final newStartIndex = _currentChunk.startIndex +
-          (moveForward
-              ? _currentChunk.data.ids.length
-              : -maybeChunk.ids.length);
-      _currentChunk = _Chunk(
-          id: adjacentChunkId, startIndex: newStartIndex, data: maybeChunk);
+      await _healLength();
+    });
+  }
+
+  Future<void> _healLength() async {
+    if (length < _currentChunk.startIndex + _currentChunk.data.ids.length) {
+      var betterLength =
+          _currentChunk.startIndex + _currentChunk.data.ids.length;
+      if (_currentChunk.data.nextChunkId != null) {
+        betterLength++;
+      }
+      print('Healing bad length $length to $betterLength');
+      await _setLength(betterLength);
     }
   }
 }

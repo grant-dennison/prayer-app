@@ -32,13 +32,13 @@ class PrayerItemRouteInformationParser
   @override
   RouteInformation restoreRouteInformation(PrayerItemRoutePath path) {
     if (path.prayerItemIdBreadcrumbs.isEmpty) {
-      return RouteInformation(location: '/');
+      return const RouteInformation(location: '/');
     }
     return RouteInformation(
       location: [
         _prayerSegment,
         ...path.prayerItemIdBreadcrumbs,
-        path.isDetails ? _detailsSegment : _listSegment
+        if (path.isDetails) _detailsSegment else _listSegment
       ].join('/'),
     );
   }

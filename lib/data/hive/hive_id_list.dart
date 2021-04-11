@@ -9,3 +9,5 @@ class HiveIdList extends HiveObject {
   @HiveField(1)
   String firstChunkId = '';
 }
+
+const boxIdIdList = 'idList';

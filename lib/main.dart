@@ -7,7 +7,7 @@ import 'navigation/navigation_controller.dart';
 import 'navigation/prayer_item_route_information_parser.dart';
 import 'navigation/prayer_item_router_delegate.dart';
 
-void main() async {
+Future<void> main() async {
   await initHive();
   runApp(PrayerApp());
 }
@@ -45,38 +45,39 @@ class _PrayerAppState extends State<PrayerApp> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-        future: _prayerDataAccessFuture,
-        builder: (context, AsyncSnapshot<PrayerDataAccess> snapshot) {
-          if (snapshot.hasError) {
-            return Text('Error opening database');
-          } else if (snapshot.hasData) {
-            return Provider<PrayerDataAccess>.value(
-              value: snapshot.data!,
-              child: ChangeNotifierProvider<NavigationController>.value(
-                value: _routerDelegate,
-                child: MaterialApp.router(
-                  title: 'Prayer App',
-                  theme: ThemeData(
-                    primarySwatch: Colors.blue,
-                  ),
-                  routerDelegate: _routerDelegate,
-                  routeInformationParser: _routeInformationParser,
+      future: _prayerDataAccessFuture,
+      builder: (context, AsyncSnapshot<PrayerDataAccess> snapshot) {
+        if (snapshot.hasError) {
+          return const Text('Error opening database');
+        } else if (snapshot.hasData) {
+          return Provider<PrayerDataAccess>.value(
+            value: snapshot.data!,
+            child: ChangeNotifierProvider<NavigationController>.value(
+              value: _routerDelegate,
+              child: MaterialApp.router(
+                title: 'Prayer App',
+                theme: ThemeData(
+                  primarySwatch: Colors.blue,
+                ),
+                routerDelegate: _routerDelegate,
+                routeInformationParser: _routeInformationParser,
+              ),
+            ),
+          );
+        } else {
+          return const MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: CircularProgressIndicator(),
                 ),
               ),
-            );
-          } else {
-            return MaterialApp(
-              home: Scaffold(
-                body: Center(
-                  child: SizedBox(
-                    child: CircularProgressIndicator(),
-                    width: 60,
-                    height: 60,
-                  ),
-                ),
-              ),
-            );
-          }
-        });
+            ),
+          );
+        }
+      },
+    );
   }
 }

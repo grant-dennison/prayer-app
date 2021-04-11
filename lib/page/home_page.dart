@@ -23,7 +23,7 @@ class HomeScreen extends StatelessWidget {
       body: Center(
           child: ElevatedButton(
         onPressed: () => navigationController.pushContext(rootPrayerItem),
-        child: Text('Pray'),
+        child: const Text('Pray'),
       )),
     );
   }

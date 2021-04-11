@@ -13,3 +13,5 @@ class HiveIdListChunk extends HiveObject {
   @HiveField(3)
   List<String> ids = [];
 }
+
+const boxIdIdListChunk = 'idListChunk';

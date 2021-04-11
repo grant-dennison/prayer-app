@@ -11,7 +11,7 @@ class PrayerItemListPage extends Page {
 
   PrayerItemListPage({
     required this.breadcrumbs,
-  }) : super(key: ValueKey(breadcrumbs.join('/') + '/list-page'));
+  }) : super(key: ValueKey('${breadcrumbs.join('/')}/list-page'));
 
   @override
   Route createRoute(BuildContext context) {
@@ -40,8 +40,7 @@ class PrayerItemListScreen extends StatelessWidget {
                 icon: const Icon(Icons.more),
                 tooltip: 'See prayer details',
                 onPressed: () {
-                  print('see more');
-                  controller.navigation.toggleDetails(true);
+                  controller.navigation.toggleDetails(show: true);
                 },
               )
           ],
@@ -51,11 +50,11 @@ class PrayerItemListScreen extends StatelessWidget {
           onPressed: () async {
             final input = await prompt(context);
             if (input != null && input.isNotEmpty) {
-              controller.addPrayer(input);
+              await controller.addPrayer(input);
             }
           },
           tooltip: 'Add Prayer',
-          child: Icon(Icons.add),
+          child: const Icon(Icons.add),
         ),
       ),
       child: PrayerItemListWidget(),
@@ -68,8 +67,7 @@ class PrayerItemListWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<PrayerContextController>(
       builder: (context, controller, child) {
-        final List<PrayerItem> listCopy =
-            List.from(controller.context.children);
+        final listCopy = List<PrayerItem>.from(controller.context.children);
         listCopy.sort((a, b) {
           final aTime = a.lastPrayed;
           final bTime = b.lastPrayed;
@@ -81,13 +79,13 @@ class PrayerItemListWidget extends StatelessWidget {
           }
           return aTime.compareTo(bTime);
         });
-        final List prayerItemWidgets =
+        final List<Widget> prayerItemWidgets =
             listCopy.map((e) => PrayerItemWidget(e)).toList();
-        final List<Widget> widgets = [
-          if (prayerItemWidgets.length == 0)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text("(no items in list)",
+        final widgets = [
+          if (prayerItemWidgets.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text('(no items in list)',
                   style: TextStyle(
                     fontSize: 40,
                     fontStyle: FontStyle.italic,
@@ -106,27 +104,27 @@ class PrayerItemListWidget extends StatelessWidget {
 class PrayerItemWidget extends StatelessWidget {
   final PrayerItem prayerItem;
 
-  PrayerItemWidget(this.prayerItem);
+  const PrayerItemWidget(this.prayerItem);
 
   @override
   Widget build(BuildContext context) {
     final controller =
         Provider.of<PrayerContextController>(context, listen: false);
     return Dismissible(
-      key: ValueKey(prayerItem.id + '|' + prayerItem.lastPrayed.toString()),
-      child: GestureDetector(
-        onTap: () => controller.navigation.pushContext(prayerItem),
-        child: ListTile(
-          title: Text(
-            "${prayerItem.description}",
-            style: TextStyle(fontSize: 40),
-          ),
-        ),
-      ),
+      key: ValueKey('${prayerItem.id}|${prayerItem.lastPrayed}'),
       background: Container(
         color: Colors.green,
       ),
       onDismissed: (direction) => controller.markPrayed(prayerItem),
+      child: GestureDetector(
+        onTap: () => controller.navigation.pushContext(prayerItem),
+        child: ListTile(
+          title: Text(
+            prayerItem.description,
+            style: const TextStyle(fontSize: 40),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -9,7 +9,7 @@ class PrayerContextControllerProvider extends StatefulWidget {
   final List<String> breadcrumbs;
   final Widget child;
 
-  PrayerContextControllerProvider({
+  const PrayerContextControllerProvider({
     required this.breadcrumbs,
     required this.child,
   });
@@ -73,12 +73,12 @@ class _PrayerContextControllerProviderState
             } else {
               child = Column(
                 children: [
-                  SizedBox(
-                    child: CircularProgressIndicator(),
+                  const SizedBox(
                     width: 60,
                     height: 60,
+                    child: CircularProgressIndicator(),
                   ),
-                  Padding(
+                  const Padding(
                     padding: EdgeInsets.only(top: 16),
                     child: Text('Awaiting result...'),
                   )

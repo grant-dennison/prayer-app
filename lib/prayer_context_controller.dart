@@ -1,10 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:prayer_app/build_prayer_context.dart';
+import 'package:prayer_app/data/prayer_data_access.dart';
 import 'package:prayer_app/navigation/navigation_controller.dart';
 import 'package:prayer_app/prayer_context.dart';
-import 'package:prayer_app/data/prayer_data_access.dart';
 import 'package:prayer_app/utils/uuid.dart';
-import 'package:uuid/uuid.dart';
 
 import 'model/prayer_item.dart';
 
@@ -36,26 +35,29 @@ class PrayerContextController extends ChangeNotifier {
   })   : _dataAccess = dataAccess,
         _breadcrumbs = breadcrumbs;
 
-  void addPrayer(String description) async {
+  Future<void> addPrayer(String description) async {
+    print('addPrayer');
     final prayerItem = PrayerItem(id: genUuid(), description: description);
     await _dataAccess.createPrayerItem(prayerItem);
+    print('prayer created');
     await _dataAccess.linkChild(parent: context.current, child: prayerItem);
-    _rebuildContext();
+    print('prayer linked');
+    await _rebuildContext();
   }
 
-  void addUpdate(String text) async {
+  Future<void> addUpdate(String text) async {
     if (text.isEmpty) {
       return;
     }
     print('addStatus()');
     await _dataAccess.addUpdate(context.current, DateTime.now(), text);
-    _rebuildContext();
+    await _rebuildContext();
   }
 
-  void markPrayed(PrayerItem prayerItem) async {
+  Future<void> markPrayed(PrayerItem prayerItem) async {
     print('markPrayed()');
     await _dataAccess.markPrayed(prayerItem, DateTime.now());
-    _rebuildContext();
+    await _rebuildContext();
   }
 
   bool isAtRoot() {

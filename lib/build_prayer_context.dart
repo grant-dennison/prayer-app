@@ -7,10 +7,10 @@ Future<PrayerContext> buildPrayerContext(
 ) async {
   final prayerItem = await dataAccess.getPrayerItem(breadcrumbs.last);
   if (prayerItem == null) {
-    throw ('Prayer item not found');
+    throw 'Prayer item not found';
   }
-  final children = await dataAccess.getChildren(prayerItem);
-  final updates = await dataAccess.getUpdates(prayerItem);
+  final children = await dataAccess.getActiveChildren(prayerItem);
+  final updates = await dataAccess.getUpdateHelper(prayerItem);
   return PrayerContext(
     breadcrumbs: breadcrumbs,
     current: prayerItem,

@@ -44,3 +44,21 @@ class HivePrayerUpdateAdapter extends TypeAdapter<HivePrayerUpdate> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+HivePrayerUpdate _$HivePrayerUpdateFromJson(Map<String, dynamic> json) {
+  return HivePrayerUpdate(
+    prayerId: json['prayerId'] as String,
+    description: json['description'] as String,
+  )..created = DateTime.parse(json['created'] as String);
+}
+
+Map<String, dynamic> _$HivePrayerUpdateToJson(HivePrayerUpdate instance) =>
+    <String, dynamic>{
+      'prayerId': instance.prayerId,
+      'description': instance.description,
+      'created': instance.created.toIso8601String(),
+    };

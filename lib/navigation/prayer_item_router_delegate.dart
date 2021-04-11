@@ -10,6 +10,7 @@ import 'prayer_item_route_path.dart';
 class PrayerItemRouterDelegate extends RouterDelegate<PrayerItemRoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<PrayerItemRoutePath>
     implements NavigationController {
+  @override
   final GlobalKey<NavigatorState> navigatorKey;
 
   List<String> _prayerItemIdBreadcrumbs = [];
@@ -17,6 +18,7 @@ class PrayerItemRouterDelegate extends RouterDelegate<PrayerItemRoutePath>
 
   PrayerItemRouterDelegate() : navigatorKey = GlobalKey<NavigatorState>();
 
+  @override
   PrayerItemRoutePath get currentConfiguration {
     return PrayerItemRoutePath(
       prayerItemIdBreadcrumbs: _prayerItemIdBreadcrumbs,
@@ -26,8 +28,8 @@ class PrayerItemRouterDelegate extends RouterDelegate<PrayerItemRoutePath>
 
   @override
   Widget build(BuildContext context) {
-    final List<List<String>> breadcrumbss = [];
-    for (int i = 0; i < _prayerItemIdBreadcrumbs.length; i++) {
+    final breadcrumbss = <List<String>>[];
+    for (var i = 0; i < _prayerItemIdBreadcrumbs.length; i++) {
       breadcrumbss.add(_prayerItemIdBreadcrumbs.getRange(0, i + 1).toList());
     }
     return Navigator(
@@ -44,7 +46,7 @@ class PrayerItemRouterDelegate extends RouterDelegate<PrayerItemRoutePath>
         }
 
         if (_isDetailsPage) {
-          toggleDetails(false);
+          toggleDetails(show: false);
         } else {
           popContext();
         }
@@ -61,7 +63,7 @@ class PrayerItemRouterDelegate extends RouterDelegate<PrayerItemRoutePath>
   }
 
   @override
-  void toggleDetails(bool? show) {
+  void toggleDetails({bool? show}) {
     if (show == null) {
       _isDetailsPage = !_isDetailsPage;
     } else {
@@ -72,14 +74,12 @@ class PrayerItemRouterDelegate extends RouterDelegate<PrayerItemRoutePath>
 
   @override
   void popContext() {
-    print('popContext()');
     _prayerItemIdBreadcrumbs.removeLast();
     notifyListeners();
   }
 
   @override
   void pushContext(PrayerItem targetPrayerItem) {
-    print('pushContext()');
     _prayerItemIdBreadcrumbs.add(targetPrayerItem.id);
     notifyListeners();
   }
