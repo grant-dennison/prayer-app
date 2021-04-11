@@ -50,18 +50,23 @@ class _PrayerAppState extends State<PrayerApp> {
         if (snapshot.hasError) {
           return const Text('Error opening database');
         } else if (snapshot.hasData) {
-          return Provider<PrayerDataAccess>.value(
-            value: snapshot.data!,
-            child: ChangeNotifierProvider<NavigationController>.value(
-              value: _routerDelegate,
-              child: MaterialApp.router(
-                title: 'Prayer App',
-                theme: ThemeData(
-                  primarySwatch: Colors.blue,
-                ),
-                routerDelegate: _routerDelegate,
-                routeInformationParser: _routeInformationParser,
+          return MultiProvider(
+            providers: [
+              Provider<Boxes>.value(value: _hiveBoxes!),
+              Provider<PrayerDataAccess>.value(
+                value: snapshot.data!,
               ),
+              ChangeNotifierProvider<NavigationController>.value(
+                value: _routerDelegate,
+              ),
+            ],
+            child: MaterialApp.router(
+              title: 'Prayer App',
+              theme: ThemeData(
+                primarySwatch: Colors.blue,
+              ),
+              routerDelegate: _routerDelegate,
+              routeInformationParser: _routeInformationParser,
             ),
           );
         } else {
