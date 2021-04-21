@@ -32,6 +32,7 @@ class _PrayerContextControllerProviderState
     if (dataAccess != lastDataAccess ||
         navigationController != lastNavigationController ||
         controllerFuture == null) {
+      // TODO: This isn't properly rebuilt on pop context.
       controllerFuture = buildPrayerContextController(
         dataAccess: dataAccess,
         navigation: navigationController,

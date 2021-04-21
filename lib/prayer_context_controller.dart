@@ -36,12 +36,9 @@ class PrayerContextController extends ChangeNotifier {
         _breadcrumbs = breadcrumbs;
 
   Future<void> addPrayer(String description) async {
-    print('addPrayer');
     final prayerItem = PrayerItem(id: genUuid(), description: description);
     await _dataAccess.createPrayerItem(prayerItem);
-    print('prayer created');
     await _dataAccess.linkChild(parent: context.current, child: prayerItem);
-    print('prayer linked');
     await _rebuildContext();
   }
 
@@ -62,6 +59,25 @@ class PrayerContextController extends ChangeNotifier {
 
   bool isAtRoot() {
     return _breadcrumbs.length == 1;
+  }
+
+  Future<void> movePrayer(
+      PrayerItem movingPrayer, PrayerItem targetParent) async {
+    await Future.wait([
+      _dataAccess.unlinkChild(parent: context.current, child: movingPrayer),
+      _dataAccess.linkChild(parent: targetParent, child: movingPrayer),
+    ]);
+    await _rebuildContext();
+  }
+
+  Future<void> editPrayer(PrayerItem prayerItem, String description) async {
+    await _dataAccess.editPrayerItem(prayerItem, description);
+    await _rebuildContext();
+  }
+
+  Future<void> removePrayer(PrayerItem prayerItem) async {
+    await _dataAccess.unlinkChild(parent: context.current, child: prayerItem);
+    await _rebuildContext();
   }
 
   Future<void> _rebuildContext() async {

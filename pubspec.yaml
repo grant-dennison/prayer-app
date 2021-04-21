@@ -23,14 +23,16 @@ environment:
 dependencies:
   adaptive_dialog: ^0.10.0+5
   date_time_format: ^2.0.1
+  file_picker: ^3.0.1
+  file_saver: ^0.0.6
   flutter:
     sdk: flutter
+  focused_menu: ^1.0.5
   hive: ^2.0.2
   hive_flutter: ^1.0.0
   json_annotation: ^4.0.1
   keyboard_dismisser: ^2.0.0
   mutex: ^3.0.0
-  prompt_dialog: ^1.0.0
   provider: ^5.0.0
   uuid: ^3.0.3
 

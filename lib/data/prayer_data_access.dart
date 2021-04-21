@@ -88,6 +88,14 @@ class PrayerDataAccess {
     ]);
   }
 
+  Future<void> editPrayerItem(PrayerItem prayerItem, String description) async {
+    final hivePrayer = await _hiveBoxes.prayer.get(prayerItem.id);
+    if (hivePrayer != null) {
+      hivePrayer.description = description;
+      await _hiveBoxes.prayer.put(prayerItem.id, hivePrayer);
+    }
+  }
+
   Future<void> linkChild({
     required PrayerItem parent,
     required PrayerItem child,

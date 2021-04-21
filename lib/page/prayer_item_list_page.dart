@@ -1,6 +1,8 @@
+import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
+import 'package:focused_menu/focused_menu.dart';
+import 'package:focused_menu/modals.dart';
 import 'package:prayer_app/page/prayer_context_controller_provider.dart';
-import 'package:prompt_dialog/prompt_dialog.dart';
 import 'package:provider/provider.dart';
 
 import '../model/prayer_item.dart';
@@ -48,9 +50,16 @@ class PrayerItemListScreen extends StatelessWidget {
         body: child,
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            final input = await prompt(context);
+            final input = await showTextInputDialog(
+              context: context,
+              title: 'New Prayer',
+              message: 'Enter new prayer text',
+              textFields: [
+                DialogTextField(hintText: 'my care'),
+              ],
+            );
             if (input != null && input.isNotEmpty) {
-              await controller.addPrayer(input);
+              await controller.addPrayer(input[0]);
             }
           },
           tooltip: 'Add Prayer',
@@ -116,12 +125,80 @@ class PrayerItemWidget extends StatelessWidget {
         color: Colors.green,
       ),
       onDismissed: (direction) => controller.markPrayed(prayerItem),
-      child: GestureDetector(
-        onTap: () => controller.navigation.pushContext(prayerItem),
-        child: ListTile(
-          title: Text(
-            prayerItem.description,
-            style: const TextStyle(fontSize: 40),
+      child: FocusedMenuHolder(
+        menuOffset: 10.0,
+        menuItems: [
+          FocusedMenuItem(
+            title: Text('Move'),
+            onPressed: () async {
+              final parent = controller.context.parent;
+              final whereTo = await showConfirmationDialog<PrayerItem>(
+                context: context,
+                title: 'Where to?',
+                actions: [
+                  if (parent != null)
+                    AlertDialogAction(
+                        key: parent, label: '(UP) ${parent.description}'),
+                  ...controller.context.children
+                      .where((e) => e != prayerItem)
+                      .map((e) =>
+                          AlertDialogAction(key: e, label: e.description)),
+                ],
+              );
+              if (whereTo != null) {
+                await controller.movePrayer(prayerItem, whereTo);
+              }
+            },
+          ),
+          FocusedMenuItem(
+            title: Text('Edit'),
+            onPressed: () async {
+              final input = await showTextInputDialog(
+                context: context,
+                title: 'Edit Prayer',
+                message: 'Enter new prayer text',
+                textFields: [
+                  DialogTextField(
+                      hintText: 'my care', initialText: prayerItem.description),
+                ],
+              );
+              if (input != null && input.isNotEmpty) {
+                await controller.editPrayer(prayerItem, input[0]);
+              }
+            },
+          ),
+          FocusedMenuItem(
+            title: Text('Mark Answered'),
+            onPressed: () {
+              print('mark answered pressed');
+            },
+          ),
+          FocusedMenuItem(
+            title: Text('Remove'),
+            onPressed: () async {
+              final result = await showOkCancelAlertDialog(
+                context: context,
+                title: 'Confirm Remove',
+                okLabel: 'Remove',
+                cancelLabel: 'Cancel',
+              );
+              if (result == OkCancelResult.ok) {
+                await controller.removePrayer(prayerItem);
+              }
+            },
+          ),
+        ],
+        onPressed: () {},
+        child: Container(
+          color: Theme.of(context).cardColor,
+          child: GestureDetector(
+            onTap: () => controller.navigation.pushContext(prayerItem),
+            child: ListTile(
+              title: Text(
+                prayerItem.description,
+                style: const TextStyle(fontSize: 40),
+              ),
+            ),
           ),
         ),
       ),
