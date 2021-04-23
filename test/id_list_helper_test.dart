@@ -80,7 +80,7 @@ void main() {
       expect(f.idListHelper.length, equals(2 * n));
       expect(f.listBox.backing[listId]!.length, equals(2 * n));
       final counts = List.filled(n, 0);
-      await f.idListHelper.forEachId(0, 2 * n, (i, id) async {
+      await f.idListHelper.forEachId(0, 2 * n, (i, id) {
         counts[int.parse(id)]++;
       });
       for (var i = 0; i < n; i++) {
@@ -116,7 +116,7 @@ void main() {
                 'after $inserts inserts and $removes removes'
                 ' (last was ${shouldRemove ? 'remove' : 'insert'})');
         // This check slows things down significantly, but can be useful debugging.
-        // await f.idListHelper.forEachId(0, f.idListHelper.length, (i, id) async {
+        // await f.idListHelper.forEachId(0, f.idListHelper.length, (i, id) {
         //   expect(id, equals(compareList[i]));
         // });
       }
@@ -127,7 +127,7 @@ void main() {
 
       // Verify the data from our structure against a standard list.
       var counted = 0;
-      await f.idListHelper.forEachId(0, f.idListHelper.length, (i, id) async {
+      await f.idListHelper.forEachId(0, f.idListHelper.length, (i, id) {
         expect(id, equals(compareList[i]));
         counted++;
       });

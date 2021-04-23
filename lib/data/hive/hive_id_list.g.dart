@@ -41,3 +41,19 @@ class HiveIdListAdapter extends TypeAdapter<HiveIdList> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+HiveIdList _$HiveIdListFromJson(Map<String, dynamic> json) {
+  return HiveIdList()
+    ..length = json['length'] as int
+    ..firstChunkId = json['firstChunkId'] as String;
+}
+
+Map<String, dynamic> _$HiveIdListToJson(HiveIdList instance) =>
+    <String, dynamic>{
+      'length': instance.length,
+      'firstChunkId': instance.firstChunkId,
+    };

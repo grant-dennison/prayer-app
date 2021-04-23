@@ -47,3 +47,23 @@ class HiveIdListChunkAdapter extends TypeAdapter<HiveIdListChunk> {
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+HiveIdListChunk _$HiveIdListChunkFromJson(Map<String, dynamic> json) {
+  return HiveIdListChunk()
+    ..parentListId = json['parentListId'] as String
+    ..previousChunkId = json['previousChunkId'] as String?
+    ..nextChunkId = json['nextChunkId'] as String?
+    ..ids = (json['ids'] as List<dynamic>).map((e) => e as String).toList();
+}
+
+Map<String, dynamic> _$HiveIdListChunkToJson(HiveIdListChunk instance) =>
+    <String, dynamic>{
+      'parentListId': instance.parentListId,
+      'previousChunkId': instance.previousChunkId,
+      'nextChunkId': instance.nextChunkId,
+      'ids': instance.ids,
+    };

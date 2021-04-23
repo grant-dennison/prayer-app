@@ -1,6 +1,7 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:prayer_app/data/export_data.dart';
 import 'package:prayer_app/data/hive/boxes.dart';
 import 'package:prayer_app/data/root_prayer_item.dart';
 import 'package:prayer_app/navigation/navigation_controller.dart';
@@ -24,6 +25,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final navigationController = Provider.of<NavigationController>(context);
+    final boxes = Provider.of<Boxes>(context);
     return Scaffold(
       body: Center(
           child: Column(
@@ -41,7 +43,15 @@ class HomeScreen extends StatelessWidget {
             )),
             child: const Text('Reflect'),
           ),
-          DeleteButton(),
+          ElevatedButton(
+            onPressed: () => exportDataToFiles(boxes),
+            // onPressed: () => exportData(boxes, (index, json) async {
+            //   print('got $index');
+            //   print(json);
+            // }),
+            child: const Text('Export'),
+          ),
+          //  DeleteButton(),
         ],
       )),
     );

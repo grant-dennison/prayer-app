@@ -6,5 +6,5 @@ String genUuid() {
   final bytes = List.filled(16, 0);
   const u = Uuid();
   u.v4buffer(bytes);
-  return base64.encode(bytes);
+  return base64.encode(bytes).replaceAll('/', '_').replaceAll('=', '');
 }

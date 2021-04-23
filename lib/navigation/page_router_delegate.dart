@@ -29,7 +29,6 @@ class PageRouterDelegate extends RouterDelegate<PageRoutePath>
 
   @override
   Widget build(BuildContext context) {
-    print('page stack has ${_pageStack.length} elements');
     final pages = <Page>[];
     for (var i = 0; i < _pageStack.length; i++) {
       pages.add(_getPageAt(i));
@@ -73,9 +72,7 @@ class PageRouterDelegate extends RouterDelegate<PageRoutePath>
 
   @override
   void popContext() {
-    print('popContext()');
     if (_pageStack.length == 1) {
-      print('not popping because home page would go away');
       return;
     }
     _pageStack.removeLast();
@@ -84,7 +81,6 @@ class PageRouterDelegate extends RouterDelegate<PageRoutePath>
 
   @override
   void pushContext(PageSpec pageSpec) {
-    print('pushContext()');
     _pageStack.add(pageSpec);
     notifyListeners();
   }
@@ -94,13 +90,10 @@ class PageRouterDelegate extends RouterDelegate<PageRoutePath>
     final breadcrumbs = _getBreadcrumbsAt(i);
     switch (pageSpec.pageType) {
       case PageType.home:
-        print('home page');
         return HomePage();
       case PageType.activeList:
-        print('list page');
         return PrayerItemListPage(breadcrumbs: breadcrumbs);
       case PageType.answeredList:
-        print('answered page');
         return AnsweredPrayerListPage(breadcrumbs: breadcrumbs);
       case PageType.details:
         return PrayerItemDetailsPage(breadcrumbs: breadcrumbs);

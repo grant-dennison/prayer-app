@@ -5,9 +5,7 @@ import 'package:prayer_app/utils/uuid.dart';
 
 import 'hive/hive_id_list.dart';
 
-// const _idealChunkSize = 100;
-// TODO: Change this to back to something higher like 100. Lower now for testing.
-const _idealChunkSize = 4;
+const _idealChunkSize = 100;
 
 enum LoopBehavior {
   keepGoing,
@@ -57,13 +55,13 @@ class IdListHelper {
   }
 
   Future<void> forEachId(int startIndex, int length,
-      Future<LoopBehavior?> Function(int i, String id) callback) async {
+      LoopBehavior? Function(int i, String id) callback) async {
     await _m.protect(() async {
       for (var i = startIndex; i < startIndex + length; i++) {
         if (!_isIndexInCurrentChunk(i)) {
           await _moveToChunkWith(i);
         }
-        final result = await callback(i, _currentChunk.getId(i));
+        final result = callback(i, _currentChunk.getId(i));
         if (result == LoopBehavior.stop) {
           return;
         }
