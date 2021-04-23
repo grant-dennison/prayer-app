@@ -1,8 +1,8 @@
-import 'package:flutter/cupertino.dart';
-import 'package:prayer_app/model/prayer_item.dart';
+import 'package:flutter/foundation.dart';
+
+import 'page_spec.dart';
 
 abstract class NavigationController implements ChangeNotifier {
-  void toggleDetails({bool? show});
   void popContext();
-  void pushContext(PrayerItem targetPrayerItem);
+  void pushContext(PageSpec pageSpec);
 }

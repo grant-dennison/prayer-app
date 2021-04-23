@@ -36,10 +36,6 @@ class PrayerItemDetailsScreen extends StatelessWidget {
         child: Scaffold(
           appBar: AppBar(
             title: Text(controller.context.current.description),
-            leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () =>
-                    controller.navigation.toggleDetails(show: false)),
           ),
           body: child,
         ),
@@ -66,13 +62,30 @@ class PrayerItemDetailsSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Provider.of<PrayerContextController>(context);
     final timesPrayed = controller.context.current.timesPrayed;
+    final prayedSince = DateTimeFormat.format(
+        controller.context.current.created,
+        format: 'D, M j Y');
+    final answered = controller.context.current.answered == null
+        ? null
+        : DateTimeFormat.format(controller.context.current.answered!,
+            format: 'D, M j Y');
     return Padding(
       padding: cardPadding,
-      child: Text(
-        'Prayed $timesPrayed times since X date/time',
-        style: const TextStyle(
-          fontSize: 20.0,
-        ),
+      child: Column(
+        children: [
+          if (answered != null)
+            Text('Answered! $answered',
+                style: const TextStyle(
+                  fontSize: 20.0,
+                  fontWeight: FontWeight.bold,
+                )),
+          Text(
+            'Prayed $timesPrayed times since $prayedSince',
+            style: const TextStyle(
+              fontSize: 20.0,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -172,7 +185,7 @@ class PrayerItemUpdate extends StatelessWidget {
             alignment: Alignment.bottomLeft,
             child: Text(
               DateTimeFormat.format(update.time,
-                  format: 'D, M j, \\a\\t h:i a'),
+                  format: 'D, M j Y, \\a\\t h:i a'),
               style: const TextStyle(
                 fontSize: 16,
                 fontStyle: FontStyle.italic,

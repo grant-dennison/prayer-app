@@ -18,8 +18,12 @@ class IdListManager {
     required this.chunkBox,
   });
 
-  Future<String> createList() async {
-    final listId = genUuid();
+  bool listExists(String id) {
+    return listBox.containsKey(id);
+  }
+
+  Future<String> createList([String? listId]) async {
+    listId ??= genUuid();
     final chunkId = genUuid();
 
     final list = HiveIdList();

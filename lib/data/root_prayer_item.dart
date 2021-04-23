@@ -1,3 +1,1 @@
-import '../model/prayer_item.dart';
-
-const rootPrayerItem = PrayerItem(id: 'root', description: 'Everything');
+const rootPrayerItemId = 'root';

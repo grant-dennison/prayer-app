@@ -13,12 +13,14 @@ Future<PrayerContextController> buildPrayerContextController({
   required List<String> breadcrumbs,
 }) async {
   final context = await buildPrayerContext(breadcrumbs, dataAccess);
-  return PrayerContextController(
+  final controller = PrayerContextController(
     dataAccess: dataAccess,
     navigation: navigation,
     breadcrumbs: breadcrumbs,
     context: context,
   );
+  await controller.cleanUpChildren();
+  return controller;
 }
 
 class PrayerContextController extends ChangeNotifier {
@@ -36,7 +38,11 @@ class PrayerContextController extends ChangeNotifier {
         _breadcrumbs = breadcrumbs;
 
   Future<void> addPrayer(String description) async {
-    final prayerItem = PrayerItem(id: genUuid(), description: description);
+    final prayerItem = PrayerItem(
+      id: genUuid(),
+      description: description,
+      created: DateTime.now(),
+    );
     await _dataAccess.createPrayerItem(prayerItem);
     await _dataAccess.linkChild(parent: context.current, child: prayerItem);
     await _rebuildContext();
@@ -46,15 +52,20 @@ class PrayerContextController extends ChangeNotifier {
     if (text.isEmpty) {
       return;
     }
-    print('addStatus()');
     await _dataAccess.addUpdate(context.current, DateTime.now(), text);
     await _rebuildContext();
   }
 
   Future<void> markPrayed(PrayerItem prayerItem) async {
-    print('markPrayed()');
     await _dataAccess.markPrayed(prayerItem, DateTime.now());
     await _rebuildContext();
+  }
+
+  Future<void> markAnswered(PrayerItem prayerItem) async {
+    await _dataAccess.markAnswered(
+        prayerItem, DateTime.now(), context.breadcrumbs);
+    await _rebuildContext();
+    await cleanUpChildren();
   }
 
   bool isAtRoot() {
@@ -78,6 +89,25 @@ class PrayerContextController extends ChangeNotifier {
   Future<void> removePrayer(PrayerItem prayerItem) async {
     await _dataAccess.unlinkChild(parent: context.current, child: prayerItem);
     await _rebuildContext();
+  }
+
+  Future<void> cleanUpChildren() async {
+    // TODO: Also clean up missing children. Right now they are silently left out.
+    final answeredChildren = <PrayerItem>[];
+    for (final child in context.children) {
+      if (child.answered != null) {
+        answeredChildren.add(child);
+      }
+    }
+    if (answeredChildren.isNotEmpty) {
+      answeredChildren.sort((a, b) => a.answered!.compareTo(b.answered!));
+      for (final child in answeredChildren) {
+        await _dataAccess.unlinkChild(parent: context.current, child: child);
+        await _dataAccess.linkAnsweredChild(
+            parent: context.current, child: child);
+      }
+      await _rebuildContext();
+    }
   }
 
   Future<void> _rebuildContext() async {

@@ -4,8 +4,8 @@ import 'package:prayer_app/data/hive/init.dart';
 import 'package:provider/provider.dart';
 import 'data/prayer_data_access.dart';
 import 'navigation/navigation_controller.dart';
-import 'navigation/prayer_item_route_information_parser.dart';
-import 'navigation/prayer_item_router_delegate.dart';
+import 'navigation/page_route_information_parser.dart';
+import 'navigation/page_router_delegate.dart';
 
 Future<void> main() async {
   await initHive();
@@ -18,9 +18,9 @@ class PrayerApp extends StatefulWidget {
 }
 
 class _PrayerAppState extends State<PrayerApp> {
-  final PrayerItemRouterDelegate _routerDelegate = PrayerItemRouterDelegate();
-  final PrayerItemRouteInformationParser _routeInformationParser =
-      PrayerItemRouteInformationParser();
+  final PageRouterDelegate _routerDelegate = PageRouterDelegate();
+  final PageRouteInformationParser _routeInformationParser =
+      PageRouteInformationParser();
   late Future<PrayerDataAccess> _prayerDataAccessFuture;
   Boxes? _hiveBoxes;
 

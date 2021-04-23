@@ -4,6 +4,8 @@ import 'package:hive/hive.dart';
 import 'package:prayer_app/data/hive/boxes.dart';
 import 'package:prayer_app/data/root_prayer_item.dart';
 import 'package:prayer_app/navigation/navigation_controller.dart';
+import 'package:prayer_app/navigation/page_spec.dart';
+import 'package:prayer_app/navigation/page_type.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends Page {
@@ -28,8 +30,16 @@ class HomeScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           ElevatedButton(
-            onPressed: () => navigationController.pushContext(rootPrayerItem),
+            onPressed: () => navigationController
+                .pushContext(PageSpec.list(prayerItemId: rootPrayerItemId)),
             child: const Text('Pray'),
+          ),
+          ElevatedButton(
+            onPressed: () => navigationController.pushContext(PageSpec(
+              prayerItemId: null,
+              pageType: PageType.answeredList,
+            )),
+            child: const Text('Reflect'),
           ),
           DeleteButton(),
         ],

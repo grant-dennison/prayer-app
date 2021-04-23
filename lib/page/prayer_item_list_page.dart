@@ -1,7 +1,9 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
+import 'package:date_time_format/date_time_format.dart';
 import 'package:flutter/material.dart';
 import 'package:focused_menu/focused_menu.dart';
 import 'package:focused_menu/modals.dart';
+import 'package:prayer_app/navigation/page_spec.dart';
 import 'package:prayer_app/page/prayer_context_controller_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -42,7 +44,9 @@ class PrayerItemListScreen extends StatelessWidget {
                 icon: const Icon(Icons.more),
                 tooltip: 'See prayer details',
                 onPressed: () {
-                  controller.navigation.toggleDetails(show: true);
+                  controller.navigation.pushContext(PageSpec.details(
+                    prayerItemId: controller.context.current.id,
+                  ));
                 },
               )
           ],
@@ -77,6 +81,31 @@ class PrayerItemListWidget extends StatelessWidget {
     return Consumer<PrayerContextController>(
       builder: (context, controller, child) {
         final listCopy = List<PrayerItem>.from(controller.context.children);
+        if (listCopy.isEmpty) {
+          return Center(
+            child: Column(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(10.0),
+                  child: Text('No items in this list.',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontStyle: FontStyle.italic,
+                      )),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(10.0),
+                  child: Text(
+                      'You may want to add some items using the button below or look at details for this prayer request using the button in the top right.',
+                      style: TextStyle(
+                        // fontSize: 24,
+                        fontStyle: FontStyle.italic,
+                      )),
+                ),
+              ],
+            ),
+          );
+        }
         listCopy.sort((a, b) {
           final aTime = a.lastPrayed;
           final bTime = b.lastPrayed;
@@ -90,20 +119,8 @@ class PrayerItemListWidget extends StatelessWidget {
         });
         final List<Widget> prayerItemWidgets =
             listCopy.map((e) => PrayerItemWidget(e)).toList();
-        final widgets = [
-          if (prayerItemWidgets.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Text('(no items in list)',
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontStyle: FontStyle.italic,
-                  )),
-            ),
-          ...prayerItemWidgets,
-        ];
         return ListView(
-          children: widgets,
+          children: prayerItemWidgets,
         );
       },
     );
@@ -119,6 +136,9 @@ class PrayerItemWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller =
         Provider.of<PrayerContextController>(context, listen: false);
+    final lastPrayed = prayerItem.lastPrayed == null
+        ? 'never'
+        : DateTimeFormat.format(prayerItem.lastPrayed!, format: 'D, M j Y');
     return Dismissible(
       key: ValueKey('${prayerItem.id}|${prayerItem.lastPrayed}'),
       background: Container(
@@ -169,8 +189,18 @@ class PrayerItemWidget extends StatelessWidget {
           ),
           FocusedMenuItem(
             title: Text('Mark Answered'),
-            onPressed: () {
-              print('mark answered pressed');
+            onPressed: () async {
+              final result = await showOkCancelAlertDialog(
+                context: context,
+                title: 'Confirm Mark Answered',
+                message:
+                    'Do you mean to mark this prayer as answered? This action is irreversible.',
+                okLabel: 'Mark Answered',
+                cancelLabel: 'Cancel',
+              );
+              if (result == OkCancelResult.ok) {
+                await controller.markAnswered(prayerItem);
+              }
             },
           ),
           FocusedMenuItem(
@@ -192,12 +222,14 @@ class PrayerItemWidget extends StatelessWidget {
         child: Container(
           color: Theme.of(context).cardColor,
           child: GestureDetector(
-            onTap: () => controller.navigation.pushContext(prayerItem),
+            onTap: () => controller.navigation
+                .pushContext(PageSpec.list(prayerItemId: prayerItem.id)),
             child: ListTile(
               title: Text(
                 prayerItem.description,
-                style: const TextStyle(fontSize: 40),
+                style: const TextStyle(fontSize: 24),
               ),
+              subtitle: Text('last prayed $lastPrayed'),
             ),
           ),
         ),
