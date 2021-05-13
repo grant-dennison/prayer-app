@@ -24,18 +24,17 @@ Future<PrayerContextController> buildPrayerContextController({
 }
 
 class PrayerContextController extends ChangeNotifier {
-  final PrayerDataAccess _dataAccess;
+  final PrayerDataAccess dataAccess;
   final NavigationController navigation;
   final List<String> _breadcrumbs;
   PrayerContext context;
 
   PrayerContextController({
-    required PrayerDataAccess dataAccess,
+    required this.dataAccess,
     required this.navigation,
     required List<String> breadcrumbs,
     required this.context,
-  })   : _dataAccess = dataAccess,
-        _breadcrumbs = breadcrumbs;
+  }) : _breadcrumbs = breadcrumbs;
 
   Future<void> addPrayer(String description) async {
     final prayerItem = PrayerItem(
@@ -43,8 +42,8 @@ class PrayerContextController extends ChangeNotifier {
       description: description,
       created: DateTime.now(),
     );
-    await _dataAccess.createPrayerItem(prayerItem);
-    await _dataAccess.linkChild(parent: context.current, child: prayerItem);
+    await dataAccess.createPrayerItem(prayerItem);
+    await dataAccess.linkChild(parent: context.current, child: prayerItem);
     await _rebuildContext();
   }
 
@@ -52,17 +51,17 @@ class PrayerContextController extends ChangeNotifier {
     if (text.isEmpty) {
       return;
     }
-    await _dataAccess.addUpdate(context.current, DateTime.now(), text);
+    await dataAccess.addUpdate(context.current, DateTime.now(), text);
     await _rebuildContext();
   }
 
   Future<void> markPrayed(PrayerItem prayerItem) async {
-    await _dataAccess.markPrayed(prayerItem, DateTime.now());
+    await dataAccess.markPrayed(prayerItem, DateTime.now());
     await _rebuildContext();
   }
 
   Future<void> markAnswered(PrayerItem prayerItem) async {
-    await _dataAccess.markAnswered(
+    await dataAccess.markAnswered(
         prayerItem, DateTime.now(), context.breadcrumbs);
     await _rebuildContext();
     await cleanUpChildren();
@@ -75,19 +74,27 @@ class PrayerContextController extends ChangeNotifier {
   Future<void> movePrayer(
       PrayerItem movingPrayer, PrayerItem targetParent) async {
     await Future.wait([
-      _dataAccess.unlinkChild(parent: context.current, child: movingPrayer),
-      _dataAccess.linkChild(parent: targetParent, child: movingPrayer),
+      dataAccess.unlinkChild(parent: context.current, child: movingPrayer),
+      dataAccess.linkChild(parent: targetParent, child: movingPrayer),
+    ]);
+    await _rebuildContext();
+  }
+
+  Future<void> forkPrayer(
+      PrayerItem movingPrayer, PrayerItem targetParent) async {
+    await Future.wait([
+      dataAccess.linkChild(parent: targetParent, child: movingPrayer),
     ]);
     await _rebuildContext();
   }
 
   Future<void> editPrayer(PrayerItem prayerItem, String description) async {
-    await _dataAccess.editPrayerItem(prayerItem, description);
+    await dataAccess.editPrayerItem(prayerItem, description);
     await _rebuildContext();
   }
 
   Future<void> removePrayer(PrayerItem prayerItem) async {
-    await _dataAccess.unlinkChild(parent: context.current, child: prayerItem);
+    await dataAccess.unlinkChild(parent: context.current, child: prayerItem);
     await _rebuildContext();
   }
 
@@ -102,8 +109,8 @@ class PrayerContextController extends ChangeNotifier {
     if (answeredChildren.isNotEmpty) {
       answeredChildren.sort((a, b) => a.answered!.compareTo(b.answered!));
       for (final child in answeredChildren) {
-        await _dataAccess.unlinkChild(parent: context.current, child: child);
-        await _dataAccess.linkAnsweredChild(
+        await dataAccess.unlinkChild(parent: context.current, child: child);
+        await dataAccess.linkAnsweredChild(
             parent: context.current, child: child);
       }
       await _rebuildContext();
@@ -111,7 +118,7 @@ class PrayerContextController extends ChangeNotifier {
   }
 
   Future<void> _rebuildContext() async {
-    context = await buildPrayerContext(_breadcrumbs, _dataAccess);
+    context = await buildPrayerContext(_breadcrumbs, dataAccess);
     notifyListeners();
   }
 }

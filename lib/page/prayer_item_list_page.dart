@@ -3,6 +3,7 @@ import 'package:date_time_format/date_time_format.dart';
 import 'package:flutter/material.dart';
 import 'package:focused_menu/focused_menu.dart';
 import 'package:focused_menu/modals.dart';
+import 'package:prayer_app/data/root_prayer_item.dart';
 import 'package:prayer_app/navigation/page_spec.dart';
 import 'package:prayer_app/page/prayer_context_controller_provider.dart';
 import 'package:provider/provider.dart';
@@ -193,22 +194,20 @@ class PrayerItemWidget extends StatelessWidget {
           FocusedMenuItem(
             title: Text('Move'),
             onPressed: () async {
-              final parent = controller.context.parent;
-              final whereTo = await showConfirmationDialog<PrayerItem>(
-                context: context,
-                title: 'Where to?',
-                actions: [
-                  if (parent != null)
-                    AlertDialogAction(
-                        key: parent, label: '(UP) ${parent.description}'),
-                  ...controller.context.children
-                      .where((e) => e != prayerItem)
-                      .map((e) =>
-                          AlertDialogAction(key: e, label: e.description)),
-                ],
-              );
+              final whereTo =
+                  await _promptWhereToPrayerItem(context, controller);
               if (whereTo != null) {
                 await controller.movePrayer(prayerItem, whereTo);
+              }
+            },
+          ),
+          FocusedMenuItem(
+            title: Text('Fork'),
+            onPressed: () async {
+              final whereTo =
+                  await _promptWhereToPrayerItem(context, controller);
+              if (whereTo != null) {
+                await controller.forkPrayer(prayerItem, whereTo);
               }
             },
           ),
@@ -286,6 +285,29 @@ class PrayerItemWidget extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Future<PrayerItem?> _promptWhereToPrayerItem(
+      BuildContext context, PrayerContextController controller) async {
+    final parent = controller.context.parent;
+    PrayerItem? rootOption;
+    if (parent != null && parent.id != rootPrayerItemId) {
+      rootOption = await controller.dataAccess.getPrayerItem(rootPrayerItemId);
+    }
+    return await showConfirmationDialog<PrayerItem>(
+      context: context,
+      title: 'Where to?',
+      actions: [
+        if (rootOption != null)
+          AlertDialogAction(
+              key: rootOption, label: '(ROOT) ${rootOption.description}'),
+        if (parent != null)
+          AlertDialogAction(key: parent, label: '(UP) ${parent.description}'),
+        ...controller.context.children
+            .where((e) => e != prayerItem)
+            .map((e) => AlertDialogAction(key: e, label: e.description)),
+      ],
     );
   }
 }
