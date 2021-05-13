@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:prayer_app/build_prayer_context.dart';
 import 'package:prayer_app/data/prayer_data_access.dart';
+import 'package:prayer_app/model/prayer_update.dart';
 import 'package:prayer_app/navigation/navigation_controller.dart';
+import 'package:prayer_app/page/prayer_item_details_page.dart';
 import 'package:prayer_app/prayer_context.dart';
 import 'package:prayer_app/utils/uuid.dart';
 
@@ -90,6 +92,11 @@ class PrayerContextController extends ChangeNotifier {
 
   Future<void> editPrayer(PrayerItem prayerItem, String description) async {
     await dataAccess.editPrayerItem(prayerItem, description);
+    await _rebuildContext();
+  }
+
+  Future<void> editUpdate(PrayerUpdate update, String newText) async {
+    await dataAccess.editPrayerUpdate(update, newText);
     await _rebuildContext();
   }
 

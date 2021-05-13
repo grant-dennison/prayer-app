@@ -58,10 +58,13 @@ class PrayerItemDetailsScreen extends StatelessWidget {
 class PrayerItemDetailsTop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final controller = Provider.of<PrayerContextController>(context);
     return Column(
       children: [
         PrayerItemDetailsSummary(),
-        PrayerItemUpdateInput(),
+        PrayerItemUpdateInput(
+          onSubmit: (value) => controller.addUpdate(value),
+        ),
       ],
     );
   }
@@ -113,6 +116,7 @@ class PrayerItemUpdates extends StatelessWidget {
           return PrayerItemDetailsTop();
         }
         return FutureBuilder(
+          key: ValueKey(updateHelper.length + 1 - index),
           future: updateHelper.getUpdate(index - 1),
           builder: (context, AsyncSnapshot<PrayerUpdate> snapshot) {
             if (snapshot.hasData) {
@@ -128,6 +132,16 @@ class PrayerItemUpdates extends StatelessWidget {
 }
 
 class PrayerItemUpdateInput extends StatefulWidget {
+  final String initialText;
+  final Future<void> Function(String value) onSubmit;
+  final Future<void> Function()? onCancel;
+
+  PrayerItemUpdateInput({
+    this.initialText = '',
+    required this.onSubmit,
+    this.onCancel,
+  });
+
   @override
   _PrayerItemUpdateInputState createState() => _PrayerItemUpdateInputState();
 }
@@ -138,6 +152,18 @@ class _PrayerItemUpdateInputState extends State<PrayerItemUpdateInput> {
   final textController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    textController.text = widget.initialText;
+  }
+
+  // @override
+  // void didUpdateWidget(covariant PrayerItemUpdateInput oldWidget) {
+  //   super.didUpdateWidget(oldWidget);
+  //   textController.text = widget.initialText;
+  // }
+
+  @override
   void dispose() {
     textController.dispose();
     super.dispose();
@@ -145,7 +171,6 @@ class _PrayerItemUpdateInputState extends State<PrayerItemUpdateInput> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Provider.of<PrayerContextController>(context);
     return Card(
       child: Padding(
         padding: cardPadding,
@@ -159,19 +184,27 @@ class _PrayerItemUpdateInputState extends State<PrayerItemUpdateInput> {
                 // border: OutlineInputBorder(),
                 hintText: 'Write an update...',
               ),
-              onSubmitted: (value) {
-                controller.addUpdate(value);
+              onSubmitted: (value) async {
+                await widget.onSubmit(value);
                 textController.clear();
               },
             ),
             Align(
               alignment: Alignment.centerLeft,
-              child: ElevatedButton(
-                onPressed: () {
-                  controller.addUpdate(textController.text);
-                  textController.clear();
-                },
-                child: const Text('Save'),
+              child: Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      await widget.onSubmit(textController.text);
+                      textController.clear();
+                    },
+                    child: const Text('Save'),
+                  ),
+                  if (widget.onCancel != null)
+                    TextButton(
+                        onPressed: widget.onCancel,
+                        child: const Text('Cancel')),
+                ],
               ),
             )
           ],
@@ -181,13 +214,44 @@ class _PrayerItemUpdateInputState extends State<PrayerItemUpdateInput> {
   }
 }
 
-class PrayerItemUpdate extends StatelessWidget {
+class PrayerItemUpdate extends StatefulWidget {
   final PrayerUpdate update;
 
   const PrayerItemUpdate({Key? key, required this.update}) : super(key: key);
 
   @override
+  _PrayerItemUpdateState createState() => _PrayerItemUpdateState();
+}
+
+class _PrayerItemUpdateState extends State<PrayerItemUpdate> {
+  bool _editing = false;
+
+  @override
   Widget build(BuildContext context) {
+    final controller = Provider.of<PrayerContextController>(context);
+    Widget contentWidget;
+    if (!_editing) {
+      contentWidget = GestureDetector(
+        onLongPress: () => setState(() => _editing = true),
+        child: Card(
+          child: Padding(
+            padding: cardPadding,
+            child: Text(widget.update.text),
+          ),
+        ),
+      );
+    } else {
+      contentWidget = PrayerItemUpdateInput(
+        initialText: widget.update.text,
+        onSubmit: (newValue) async {
+          await controller.editUpdate(widget.update, newValue);
+          setState(() {
+            _editing = false;
+          });
+        },
+        onCancel: () async => setState(() => _editing = false),
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -196,7 +260,7 @@ class PrayerItemUpdate extends StatelessWidget {
           child: Align(
             alignment: Alignment.bottomLeft,
             child: Text(
-              DateTimeFormat.format(update.time,
+              DateTimeFormat.format(widget.update.time,
                   format: 'D, M j Y, \\a\\t h:i a'),
               style: const TextStyle(
                 fontSize: 16,
@@ -205,12 +269,7 @@ class PrayerItemUpdate extends StatelessWidget {
             ),
           ),
         ),
-        Card(
-          child: Padding(
-            padding: cardPadding,
-            child: Text(update.text),
-          ),
-        ),
+        contentWidget,
       ],
     );
   }
