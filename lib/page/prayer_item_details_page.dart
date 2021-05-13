@@ -152,6 +152,8 @@ class _PrayerItemUpdateInputState extends State<PrayerItemUpdateInput> {
         child: Column(
           children: [
             TextField(
+              minLines: 1,
+              maxLines: 10,
               controller: textController,
               decoration: const InputDecoration(
                 // border: OutlineInputBorder(),
