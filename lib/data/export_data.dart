@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:date_time_format/date_time_format.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_saver/file_saver.dart';
+import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:prayer_app/data/default_data.dart';
 import 'package:prayer_app/data/hive/hive_answered_prayer.dart';
@@ -16,8 +17,7 @@ import 'hive/boxes.dart';
 typedef PartialOutputProcessor = Future<void> Function(int index, String json);
 
 Future<void> exportDataToFiles(Boxes boxes) async {
-  final hasPermissions = await Permission.storage.request().isGranted;
-  if (!hasPermissions) {
+  if (!await hasPermissions()) {
     return;
   }
 
@@ -31,8 +31,7 @@ Future<void> exportDataToFiles(Boxes boxes) async {
 }
 
 Future<void> importDataFromFiles(Boxes boxes) async {
-  final hasPermissions = await Permission.storage.request().isGranted;
-  if (!hasPermissions) {
+  if (!await hasPermissions()) {
     return;
   }
 
@@ -69,6 +68,13 @@ Future<void> importDataFromFiles(Boxes boxes) async {
     await Future.wait(futures);
     await ensureDefaultData(boxes);
   }
+}
+
+Future<bool> hasPermissions() async {
+  if (kIsWeb) {
+    return true;
+  }
+  return await Permission.storage.request().isGranted;
 }
 
 const _exportPrayerKey = 'prayer';
