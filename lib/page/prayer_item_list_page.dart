@@ -228,28 +228,31 @@ class PrayerItemWidget extends StatelessWidget {
               }
             },
           ),
-          FocusedMenuItem(
-            title: Text('Mark Answered'),
-            onPressed: () async {
-              final result = await showOkCancelAlertDialog(
-                context: context,
-                title: 'Confirm Mark Answered',
-                message:
-                    'Do you mean to mark this prayer as answered? This action is irreversible.',
-                okLabel: 'Mark Answered',
-                cancelLabel: 'Cancel',
-              );
-              if (result == OkCancelResult.ok) {
-                await controller.markAnswered(prayerItem);
-              }
-            },
-          ),
+          if (prayerItem.childCount == 0)
+            FocusedMenuItem(
+              title: Text('Mark Answered'),
+              onPressed: () async {
+                final result = await showOkCancelAlertDialog(
+                  context: context,
+                  title: 'Confirm Mark Answered',
+                  message:
+                      'Do you mean to mark this prayer as answered? This action is irreversible.',
+                  okLabel: 'Mark Answered',
+                  cancelLabel: 'Cancel',
+                );
+                if (result == OkCancelResult.ok) {
+                  await controller.markAnswered(prayerItem);
+                }
+              },
+            ),
           FocusedMenuItem(
             title: Text('Remove'),
             onPressed: () async {
               final result = await showOkCancelAlertDialog(
                 context: context,
                 title: 'Confirm Remove',
+                message:
+                    'This prayer item will be removed from this list but may still exist in other places (e.g. export and any forked locations).',
                 okLabel: 'Remove',
                 cancelLabel: 'Cancel',
               );
