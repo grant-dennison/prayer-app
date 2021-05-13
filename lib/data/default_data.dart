@@ -6,8 +6,7 @@ import 'package:prayer_app/model/prayer_item.dart';
 
 import 'hive/hive_prayer.dart';
 
-Future<void> ensureDefaultData() async {
-  final b = await openBoxes();
+Future<void> ensureDefaultData(Boxes b) async {
   final listManager = IdListManager(listBox: b.idList, chunkBox: b.idListChunk);
   if (!b.prayer.containsKey(rootPrayerItemId)) {
     final rootPrayerItem = PrayerItem(
@@ -26,5 +25,4 @@ Future<void> ensureDefaultData() async {
   if (!listManager.listExists(answeredPrayerListId)) {
     await listManager.createList(answeredPrayerListId);
   }
-  await b.dispose();
 }

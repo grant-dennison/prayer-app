@@ -21,5 +21,10 @@ Future<void> initHive() async {
   Hive.registerAdapter(HivePrayerAdapter());
   Hive.registerAdapter(HivePrayerUpdateAdapter());
 
-  await ensureDefaultData();
+  final b = await openBoxes();
+  try {
+    await ensureDefaultData(b);
+  } finally {
+    await b.dispose();
+  }
 }

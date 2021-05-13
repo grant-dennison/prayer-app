@@ -33,6 +33,7 @@ dependencies:
   json_annotation: ^4.0.1
   keyboard_dismisser: ^2.0.0
   mutex: ^3.0.0
+  permission_handler: ^7.1.0
   provider: ^5.0.0
   uuid: ^3.0.3
 
