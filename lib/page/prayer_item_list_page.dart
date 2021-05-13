@@ -146,10 +146,45 @@ class PrayerItemWidget extends StatelessWidget {
     } else if (prayerItem.updateCount > 0) {
       trailingIcon = const Icon(Icons.notes);
     }
+    const markPrayedIcon = Icon(
+      Icons.low_priority,
+      color: Colors.white,
+    );
+    const markPrayedText = Text(
+      'Mark Prayed',
+      style: TextStyle(
+        color: Colors.white,
+      ),
+    );
     return Dismissible(
       key: ValueKey('${prayerItem.id}|${prayerItem.lastPrayed}'),
       background: Container(
         color: Colors.green,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: EdgeInsets.only(left: 4.0),
+              child: Row(
+                children: [
+                  markPrayedIcon,
+                  SizedBox(width: 4.0),
+                  markPrayedText,
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.only(right: 4.0),
+              child: Row(
+                children: [
+                  markPrayedText,
+                  SizedBox(width: 4.0),
+                  markPrayedIcon,
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       onDismissed: (direction) => controller.markPrayed(prayerItem),
       child: FocusedMenuHolder(
