@@ -33,18 +33,21 @@ class FullPageFutureBuilder<T> extends StatelessWidget {
               ],
             );
           } else {
-            child = Column(
-              children: [
-                const SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: CircularProgressIndicator(),
-                ),
-                const Padding(
-                  padding: EdgeInsets.only(top: 16),
-                  child: Text('Awaiting result...'),
-                )
-              ],
+            child = Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  const SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: CircularProgressIndicator(),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: Text('Loading...'),
+                  )
+                ],
+              ),
             );
           }
           return Scaffold(

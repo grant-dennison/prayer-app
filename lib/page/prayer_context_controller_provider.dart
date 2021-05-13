@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:prayer_app/data/prayer_data_access.dart';
 import 'package:prayer_app/navigation/navigation_controller.dart';
+import 'package:prayer_app/page/full_page_future_builder.dart';
 import 'package:provider/provider.dart';
 
 import '../prayer_context_controller.dart';
@@ -47,50 +48,13 @@ class _PrayerContextControllerProviderState
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: _getControllerFuture(context),
-        builder: (context, AsyncSnapshot<PrayerContextController> snapshot) {
-          if (snapshot.hasData) {
-            return ChangeNotifierProvider<PrayerContextController>(
-              create: (context) => snapshot.data!,
-              child: widget.child,
-            );
-          } else {
-            Widget child;
-            if (snapshot.hasError) {
-              child = Column(
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    color: Colors.red,
-                    size: 60,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Text('Error: ${snapshot.error}'),
-                  )
-                ],
-              );
-            } else {
-              child = Column(
-                children: [
-                  const SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: CircularProgressIndicator(),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(top: 16),
-                    child: Text('Awaiting result...'),
-                  )
-                ],
-              );
-            }
-            return Scaffold(
-              appBar: AppBar(),
-              body: Center(child: child),
-            );
-          }
-        });
+    return FullPageFutureBuilder<PrayerContextController>(
+      future: _getControllerFuture(context),
+      readyBuilder: (context, data) =>
+          ChangeNotifierProvider<PrayerContextController>(
+        create: (context) => data,
+        child: widget.child,
+      ),
+    );
   }
 }

@@ -2,6 +2,7 @@ import 'package:date_time_format/date_time_format.dart';
 import 'package:flutter/material.dart';
 import 'package:keyboard_dismisser/keyboard_dismisser.dart';
 import 'package:prayer_app/model/prayer_update.dart';
+import 'package:prayer_app/navigation/page_spec.dart';
 import 'package:provider/provider.dart';
 
 import '../prayer_context_controller.dart';
@@ -12,7 +13,7 @@ class PrayerItemDetailsPage extends Page {
 
   PrayerItemDetailsPage({
     required this.breadcrumbs,
-  }) : super(key: ValueKey('${breadcrumbs.join('/')}/details-page'));
+  });
 
   @override
   Route createRoute(BuildContext context) {
@@ -31,16 +32,25 @@ class PrayerItemDetailsPage extends Page {
 class PrayerItemDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer<PrayerContextController>(
-      builder: (context, controller, child) => KeyboardDismisser(
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(controller.context.current.description),
-          ),
-          body: child,
+    final controller = Provider.of<PrayerContextController>(context);
+    return KeyboardDismisser(
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(controller.context.current.description),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.list),
+              tooltip: 'See list',
+              onPressed: () {
+                controller.navigation.pushContext(PageSpec.list(
+                  prayerItemId: controller.context.current.id,
+                ));
+              },
+            ),
+          ],
         ),
+        body: PrayerItemUpdates(),
       ),
-      child: PrayerItemUpdates(),
     );
   }
 }

@@ -5,6 +5,8 @@ class PrayerItem {
   final DateTime created;
   final DateTime? lastPrayed;
   final DateTime? answered;
+  final int childCount;
+  final int updateCount;
 
   const PrayerItem({
     required this.id,
@@ -13,5 +15,7 @@ class PrayerItem {
     required this.created,
     this.lastPrayed,
     this.answered,
+    this.childCount = 0,
+    this.updateCount = 0,
   });
 }

@@ -6,7 +6,6 @@ import 'package:prayer_app/model/answered_prayer_list_helper.dart';
 import 'package:prayer_app/navigation/navigation_controller.dart';
 import 'package:prayer_app/navigation/page_spec.dart';
 import 'package:prayer_app/page/full_page_future_builder.dart';
-import 'package:prayer_app/page/prayer_context_controller_provider.dart';
 import 'package:provider/provider.dart';
 
 class AnsweredPrayerListPage extends Page {
@@ -14,7 +13,7 @@ class AnsweredPrayerListPage extends Page {
 
   AnsweredPrayerListPage({
     required this.breadcrumbs,
-  }) : super(key: ValueKey('${breadcrumbs.join('/')}/answers'));
+  });
 
   @override
   Route createRoute(BuildContext context) {

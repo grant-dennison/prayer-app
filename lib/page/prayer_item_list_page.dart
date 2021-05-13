@@ -15,7 +15,7 @@ class PrayerItemListPage extends Page {
 
   PrayerItemListPage({
     required this.breadcrumbs,
-  }) : super(key: ValueKey('${breadcrumbs.join('/')}/list-page'));
+  });
 
   @override
   Route createRoute(BuildContext context) {
@@ -34,43 +34,44 @@ class PrayerItemListPage extends Page {
 class PrayerItemListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer<PrayerContextController>(
-      builder: (context, controller, child) => Scaffold(
-        appBar: AppBar(
-          title: Text(controller.context.current.description),
-          actions: [
-            if (!controller.isAtRoot())
-              IconButton(
-                icon: const Icon(Icons.more),
-                tooltip: 'See prayer details',
-                onPressed: () {
-                  controller.navigation.pushContext(PageSpec.details(
-                    prayerItemId: controller.context.current.id,
-                  ));
-                },
-              )
-          ],
-        ),
-        body: child,
-        floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            final input = await showTextInputDialog(
-              context: context,
-              title: 'New Prayer',
-              message: 'Enter new prayer text',
-              textFields: [
-                DialogTextField(hintText: 'my care'),
-              ],
-            );
-            if (input != null && input.isNotEmpty) {
-              await controller.addPrayer(input[0]);
-            }
-          },
-          tooltip: 'Add Prayer',
-          child: const Icon(Icons.add),
-        ),
+    final controller = Provider.of<PrayerContextController>(context);
+    final hasUpdates = controller.context.current.updateCount > 0;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(controller.context.current.description),
+        actions: [
+          if (!controller.isAtRoot())
+            IconButton(
+              icon: hasUpdates
+                  ? const Icon(Icons.more)
+                  : const Icon(Icons.more_outlined),
+              tooltip: 'See prayer details',
+              onPressed: () {
+                controller.navigation.pushContext(PageSpec.details(
+                  prayerItemId: controller.context.current.id,
+                ));
+              },
+            ),
+        ],
       ),
-      child: PrayerItemListWidget(),
+      body: PrayerItemListWidget(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final input = await showTextInputDialog(
+            context: context,
+            title: 'New Prayer',
+            message: 'Enter new prayer text',
+            textFields: [
+              DialogTextField(hintText: 'my care'),
+            ],
+          );
+          if (input != null && input.isNotEmpty) {
+            await controller.addPrayer(input[0]);
+          }
+        },
+        tooltip: 'Add Prayer',
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
@@ -139,6 +140,12 @@ class PrayerItemWidget extends StatelessWidget {
     final lastPrayed = prayerItem.lastPrayed == null
         ? 'never'
         : DateTimeFormat.format(prayerItem.lastPrayed!, format: 'D, M j Y');
+    Icon? trailingIcon;
+    if (prayerItem.childCount > 0) {
+      trailingIcon = const Icon(Icons.account_tree);
+    } else if (prayerItem.updateCount > 0) {
+      trailingIcon = const Icon(Icons.notes);
+    }
     return Dismissible(
       key: ValueKey('${prayerItem.id}|${prayerItem.lastPrayed}'),
       background: Container(
@@ -222,14 +229,24 @@ class PrayerItemWidget extends StatelessWidget {
         child: Container(
           color: Theme.of(context).cardColor,
           child: GestureDetector(
-            onTap: () => controller.navigation
-                .pushContext(PageSpec.list(prayerItemId: prayerItem.id)),
+            onTap: () {
+              final shouldGoToDetails =
+                  prayerItem.childCount == 0 && prayerItem.updateCount > 0;
+              if (shouldGoToDetails) {
+                controller.navigation
+                    .pushContext(PageSpec.details(prayerItemId: prayerItem.id));
+              } else {
+                controller.navigation
+                    .pushContext(PageSpec.list(prayerItemId: prayerItem.id));
+              }
+            },
             child: ListTile(
               title: Text(
                 prayerItem.description,
                 style: const TextStyle(fontSize: 24),
               ),
               subtitle: Text('last prayed $lastPrayed'),
+              trailing: trailingIcon,
             ),
           ),
         ),

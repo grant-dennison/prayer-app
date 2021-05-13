@@ -37,6 +37,9 @@ class PrayerDataAccess {
     if (hivePrayer == null) {
       return null;
     }
+
+    final updateList = await _listManager.getList(hivePrayer.updateIdListId);
+
     return PrayerItem(
       id: id,
       description: hivePrayer.description,
@@ -44,6 +47,8 @@ class PrayerDataAccess {
       created: hivePrayer.created,
       lastPrayed: hivePrayer.lastPrayed,
       answered: hivePrayer.answered,
+      childCount: hivePrayer.activeChildIds.length,
+      updateCount: updateList.length,
     );
   }
 
