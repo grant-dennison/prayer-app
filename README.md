@@ -7,3 +7,9 @@ An app to help you pray.
 ```
 flutter packages pub run build_runner build
 ```
+
+## Build for Web
+
+```
+flutter build web
+```

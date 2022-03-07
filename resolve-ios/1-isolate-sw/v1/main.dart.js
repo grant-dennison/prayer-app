@@ -1,0 +1,1 @@
+document.getElementById("check-text").textContent = "Now the script loaded!"

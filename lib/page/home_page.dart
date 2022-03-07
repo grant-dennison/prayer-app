@@ -58,7 +58,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   .pushContext(PageSpec.list(prayerItemId: rootPrayerItemId)),
               child: const Text('Pray'),
             ),
-            SizedBox(height: 10.0),
+            Center(
+              child: SizedBox(height: 10.0),
+            ),
             ElevatedButton(
               onPressed: () => navigationController.pushContext(PageSpec(
                 prayerItemId: null,
@@ -86,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
             SizedBox(height: 10.0),
             // DeleteButton(),
             // SizedBox(height: 10.0),
-            Text('v1.1.0'),
+            Text('v1.1.1'),
           ],
         ),
       ),

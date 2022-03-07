@@ -12,7 +12,7 @@ const RESOURCES = {
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
 "index.html": "6c98af7cd14ef80d897f9a8376c69bb6",
 "": "6c98af7cd14ef80d897f9a8376c69bb6",
-"main.dart.js": "abfc9ac3edfb1b8e196c1153608717cb",
+"main.dart.js": "202108062059",
 "manifest.json": "f134f4bc1780c66a01e3ad1288075fab",
 "version.json": "c03f6e8c2830d3aacf7879fe567a7c7c"
 };
@@ -28,7 +28,7 @@ const CORE = [
 "assets/FontManifest.json"];
 
 const base = self.location.href.substring(0, self.location.href.lastIndexOf('/'));
-console.log('base = ' + base);
+// console.log('base = ' + base);
 
 // During install, the TEMP cache is populated with the application shell files.
 self.addEventListener("install", (event) => {
@@ -68,7 +68,7 @@ self.addEventListener("activate", function(event) {
       var origin = base;// self.location.origin;
       for (var request of await contentCache.keys()) {
         var key = request.url.substring(origin.length + 1);
-        console.log('considering deleting cached: ' + key);
+        // console.log('considering deleting cached: ' + key);
         // if (key == "") {
         //   key = "/";
         // }
@@ -76,7 +76,7 @@ self.addEventListener("activate", function(event) {
         // the MD5 sum has changed, delete it. Otherwise the resource is left
         // in the cache and can be reused by the new service worker.
         if (!RESOURCES[key] || RESOURCES[key] != oldManifest[key]) {
-          console.log('yep deleting it');
+          // console.log('yep deleting it');
           await contentCache.delete(request);
         }
       }
@@ -85,7 +85,7 @@ self.addEventListener("activate", function(event) {
       for (var request of await tempCache.keys()) {
         var key = request.url.substring(origin.length + 1);
         key = key.substring(0, key.indexOf('?'));
-        console.log('pulling core file: ' + key);
+        // console.log('pulling core file: ' + key);
         var response = await tempCache.match(request);
         await contentCache.put(key, response);
       }
@@ -95,7 +95,7 @@ self.addEventListener("activate", function(event) {
       return;
     } catch (err) {
       // On an unhandled exception the state of the cache cannot be guaranteed.
-      console.error('Failed to upgrade service worker: ' + err);
+      // console.error('Failed to upgrade service worker: ' + err);
       await caches.delete(CACHE_NAME);
       await caches.delete(TEMP);
       await caches.delete(MANIFEST);
@@ -106,40 +106,40 @@ self.addEventListener("activate", function(event) {
 // The fetch handler redirects requests for RESOURCE files to the service
 // worker cache.
 self.addEventListener("fetch", (event) => {
-  console.log('processing fetch for ' + event.request.url);
+  // console.log('processing fetch for ' + event.request.url);
   if (event.request.method !== 'GET') {
-    console.log('not a GET');
+    // console.log('not a GET');
     return;
   }
   var origin = base;//self.location.origin;
   var key = event.request.url.substring(origin.length + 1);
-  console.log('original key = ' + key);
+  // console.log('original key = ' + key);
   // Redirect URLs to the index.html
   if (key.indexOf('?v=') != -1) {
     key = key.split('?v=')[0];
   }
   if (event.request.url.startsWith(origin + '/#')) {
-    console.log('I see the hash, so blank');
+    // console.log('I see the hash, so blank');
     key = '';
   }
   // If the URL is not the RESOURCE list then return to signal that the
   // browser should take over.
   if (!RESOURCES[key]) {
-    console.log('not in resource list');
+    // console.log('not in resource list');
     return;
   }
   // If the URL is the index.html, perform an online-first request.
   if (key == '') {
-    console.log('root goes to online first');
+    // console.log('root goes to online first');
     return onlineFirst(event);
   }
   event.respondWith(caches.open(CACHE_NAME)
     .then((cache) =>  {
       return cache.match(event.request, { ignoreSearch: true }).then((response) => {
         if (response) {
-          console.log('found a match')
+          // console.log('found a match')
         } else {
-          console.log('no match. guess we gotta go to the interwebs');
+          // console.log('no match. guess we gotta go to the interwebs');
         }
         // Either respond with the cached resource, or perform a fetch and
         // lazily populate the cache.
